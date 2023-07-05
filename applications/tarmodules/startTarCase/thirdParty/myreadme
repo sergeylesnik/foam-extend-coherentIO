@@ -1,0 +1,23 @@
+- In this thirdParty-directory get libarchive-library
+(more information in: http://libarchive.orgi/)
+
+git clone git://github.com/libarchive/libarchive
+
+- step into libarchive directory
+cd libarchive
+
+- execute autogen.sh
+build/autogen.sh
+
+- type
+pwd
+- to get your path to this build folder
+
+- then configure the installation prozess
+./configure --prefix=<yourpathtothisthirdpartydirectory>/thirdParty/libarchive/build
+
+- compile with
+make 
+
+- and install with
+make install

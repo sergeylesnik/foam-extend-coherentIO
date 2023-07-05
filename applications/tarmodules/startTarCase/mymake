@@ -1,0 +1,4 @@
+MYTHIRDPARTYDIR=$(pwd)/thirdParty/libarchive/build/lib
+export MYTHIRDPARTYDIR
+echo "MYTHIRDPARTYDIR: " $MYTHIRDPARTYDIR
+wmake libso

@@ -1,0 +1,188 @@
+#!/bin/bash
+#------------------------------------------------------------------------------
+# =========                 |
+# \\      /  F ield         | foam-extend: Open Source CFD
+#  \\    /   O peration     |
+#   \\  /    A nd           | For copyright notice see file Copyright
+#    \\/     M anipulation  |
+#------------------------------------------------------------------------------
+# License
+#     This file is part of foam-extend.
+#
+#     foam-extend is free software: you can redistribute it and/or modify it
+#     under the terms of the GNU General Public License as published by the
+#     Free Software Foundation, either version 3 of the License, or (at your
+#     option) any later version.
+#
+#     foam-extend is distributed in the hope that it will be useful, but
+#     WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#     General Public License for more details.
+#
+#     You should have received a copy of the GNU General Public License
+#     along with foam-extend.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Script
+#     AllMake.stage4
+#
+# Description
+#     Build script for ThirdParty packages: Stage4
+#
+#     The foam-extend viewers
+#
+# Requirements:
+#     1: Your foam-extend environment must be properly initialized
+#     2: AllMake.stage1 if you are overriding your system compiler
+#     3: AllMake.stage2 if you are overriding your system comm. libraries
+#
+# Author:
+#     Martin Beaudoin, Hydro-Quebec, (2015)
+#
+#------------------------------------------------------------------------------
+# run from third-party directory only
+cd ${0%/*} || exit 1
+
+wmakeCheckPwd "$WM_THIRD_PARTY_DIR" || {
+    echo "Error: Current directory is not \$WM_THIRD_PARTY_DIR"
+    echo "    The environment variables are inconsistent with the installation."
+    echo "    Check the foam-extend entries in your dot-files and source them."
+    exit 1
+}
+. tools/makeThirdPartyFunctionsForRPM
+#------------------------------------------------------------------------------
+
+echo ========================================
+echo Starting ThirdParty AllMake: Stage4
+echo ========================================
+echo
+
+# qt-everywhere-opensource-src-4.8.6
+if [ ! -z "$QT_THIRD_PARTY" ]
+then
+    # Qt 4.8.6
+    #
+    [ ! -z "$WM_THIRD_PARTY_USE_QT_486" ] && {
+	echo "Building Qt 4.8.6"
+	( rpm_make -p qt-everywhere-opensource-src-4.8.6 -s qt-everywhere-opensource-src-4.8.6.spec -u http://download.qt.io/archive/qt/4.8/4.8.6/qt-everywhere-opensource-src-4.8.6.tar.gz )
+    }
+    # Qt 5.8.0
+    #
+    [ ! -z "$WM_THIRD_PARTY_USE_QT_580" ] && {
+    echo "Building Qt 5.8.0"
+    ( rpm_make -p qt-everywhere-opensource-src-5.8.0 -s qt-everywhere-opensource-src-5.8.0.spec -u http://download.qt.io/archive/qt/5.8/5.8.0/single/qt-everywhere-opensource-src-5.8.0.tar.gz )
+    }
+    # Qt 5.11.1
+    #
+    [ ! -z "$WM_THIRD_PARTY_USE_QT_5111" ] && {
+    echo "Building Qt 5.11.1"
+    ( rpm_make -p qt-everywhere-src-5.11.1 -s qt-everywhere-src-5.11.1.spec -u http://download.qt.io/archive/qt/5.11/5.11.1/single/qt-everywhere-src-5.11.1.tar.xz )
+    }
+else
+    echo "Using system installed QT"
+    echo ""
+fi
+
+# Paraview
+if [ -z "$PARAVIEW_SYSTEM" ]
+then
+     # Make sure we get the value of QT_BIN_DIR initialized
+     . $WM_PROJECT_DIR/etc/settings.sh
+
+    if [ -d "$QT_BIN_DIR" -a -r "$QT_BIN_DIR"/qmake ]
+    then
+        # ParaView 4.0.1
+        #
+        [ ! -z "$WM_THIRD_PARTY_USE_PARAVIEW_401" ] && {
+            echo "Building ParaView 4.0.1"
+            ( rpm_make -p ParaView-4.0.1 -s ParaView-4.0.1.spec -u http://downloads.sourceforge.net/project/foam-extend/ThirdParty/ParaView-v4.0.1-source.tgz \
+		-f --define='_qmakePath $QT_BIN_DIR/qmake'
+            )
+        }
+        # ParaView 4.1.0
+        #
+        [ ! -z "$WM_THIRD_PARTY_USE_PARAVIEW_410" ] && {
+            echo "Building ParaView 4.1.0"
+            ( rpm_make -p ParaView-4.1.0 -s ParaView-4.1.0.spec -u http://downloads.sourceforge.net/project/foam-extend/ThirdParty/ParaView-v4.1.0-source.tar.gz \
+		-f --define='_qmakePath $QT_BIN_DIR/qmake'
+            )
+        }
+        # ParaView 4.3.1
+        #
+        [ ! -z "$WM_THIRD_PARTY_USE_PARAVIEW_431" ] && {
+            echo "Building ParaView 4.3.1"
+            ( rpm_make -p ParaView-4.3.1 -s ParaView-4.3.1.spec -u http://downloads.sourceforge.net/project/foam-extend/ThirdParty/ParaView-v4.3.1-source.tar.gz \
+		-f --define='_qmakePath $QT_BIN_DIR/qmake'
+            )
+        }
+        # ParaView 4.4.0
+        #
+        [ ! -z "$WM_THIRD_PARTY_USE_PARAVIEW_440" ] && {
+            echo "Building ParaView 4.4.0"
+            ( rpm_make -p ParaView-4.4.0 -s ParaView-4.4.0.spec -u http://downloads.sourceforge.net/project/foam-extend/ThirdParty/ParaView-v4.4.0-source.tar.gz \
+		-f --define='_qmakePath $QT_BIN_DIR/qmake'
+            )
+        }
+        # ParaView 5.4.1
+        #
+        [ ! -z "$WM_THIRD_PARTY_USE_PARAVIEW_541" ] && {
+            echo "Building ParaView 5.4.1"
+            ( rpm_make -p ParaView-5.4.1 -s ParaView-5.4.1.spec -u http://www.paraview.org/files/v5.4/ParaView-v5.4.1.tar.gz \
+        -f --define='_qmakePath $QT_BIN_DIR/qmake'
+            )
+        }
+        # ParaView 5.5.2
+        #
+        [ ! -z "$WM_THIRD_PARTY_USE_PARAVIEW_552" ] && {
+            echo "Building ParaView 5.5.2"
+            ( rpm_make -p ParaView-5.5.2 -s ParaView-5.5.2.spec -u http://www.paraview.org/files/v5.5/ParaView-v5.5.2.tar.gz \
+        -f --define='_qmakePath $QT_BIN_DIR/qmake'
+            )
+        }
+    else
+        echo "WARNING: "
+        echo "WARNING: Skipping the installation of ParaView-4.x.x."
+        echo "WARNING: Please make sure the QT_BIN_DIR environment variable properly"
+        echo "WARNING: initialized in the file prefs.sh or prefs.csh"
+        echo "WARNING: The command \$QT_BIN_DIR/qmake needs to be valid"
+        echo "WARNING: "
+    fi
+else
+    echo "Using system installed ParaView"
+    echo ""
+fi
+
+# ParaView Server
+if [ -z "$PARAVIEW_SERVER_THIRD_PARTY" ]
+then
+    # ParaView 4.1.0: Server-only
+    #
+    [ ! -z "$WM_THIRD_PARTY_USE_PARAVIEW_SERVER_410" ] && {
+	echo "Building ParaView Server 4.1.0"
+	( rpm_make -p llvm-3.6.0 -s llvm-3.6.0.spec -u http://llvm.org/releases/3.6.0/llvm-3.6.0.src.tar.xz )
+	( rpm_make -p mesa-git -s mesa-git.spec -u ftp://ftp.freedesktop.org/pub/mesa/10.5.3/mesa-10.5.3.tar.gz )
+	( rpm_make -p ParaView-4.1.0_Server -s ParaView-4.1.0_Server.spec -u http://www.paraview.org/files/v4.1/ParaView-v4.1.0-source.tar.gz  \
+		-f --define='_qmakePath $QT_BIN_DIR/qmake'
+	)
+    }
+    # ParaView 4.3.1: Server-only
+    #
+    [ ! -z "$WM_THIRD_PARTY_USE_PARAVIEW_SERVER_431" ] && {
+	echo "Building ParaView Server 4.3.1"
+	( rpm_make -p llvm-3.6.0 -s llvm-3.6.0.spec -u http://llvm.org/releases/3.6.0/llvm-3.6.0.src.tar.xz )
+	( rpm_make -p mesa-git -s mesa-git.spec -u ftp://ftp.freedesktop.org/pub/mesa/10.5.3/mesa-10.5.3.tar.gz )
+	( rpm_make -p ParaView-4.3.1_Server -s ParaView-4.3.1_Server.spec -u http://www.paraview.org/files/v4.3/ParaView-v4.3.1-source.tar.gz  \
+		-f --define='_qmakePath $QT_BIN_DIR/qmake'
+	)
+    }
+else
+    echo "Using system installed ParaView Server"
+    echo ""
+fi
+
+
+echo ========================================
+echo Done ThirdParty AllMake: Stage4
+echo ========================================
+echo
+
+# ----------------------------------------------------------------- end-of-file

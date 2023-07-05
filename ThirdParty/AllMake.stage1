@@ -1,0 +1,120 @@
+#!/bin/bash
+#------------------------------------------------------------------------------
+# =========                 |
+# \\      /  F ield         | foam-extend: Open Source CFD
+#  \\    /   O peration     |
+#   \\  /    A nd           | For copyright notice see file Copyright
+#    \\/     M anipulation  |
+#------------------------------------------------------------------------------
+# License
+#     This file is part of foam-extend.
+#
+#     foam-extend is free software: you can redistribute it and/or modify it
+#     under the terms of the GNU General Public License as published by the
+#     Free Software Foundation, either version 3 of the License, or (at your
+#     option) any later version.
+#
+#     foam-extend is distributed in the hope that it will be useful, but
+#     WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#     General Public License for more details.
+#
+#     You should have received a copy of the GNU General Public License
+#     along with foam-extend.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Script
+#     AllMake.stage1
+#
+# Description
+#     Build script for ThirdParty packages: Stage1
+#
+#     Compilers and basic tools.
+#
+#     Once this stage is built, you would normally re-initialize your
+#     foam-extend environment in order to use the new compilers and tools
+#
+#     NOTE: This stage is optional. Use it only if you want to override
+#           your system pre-installed compilers and tools
+#
+# Requirements:
+#     1: Your foam-extend environment must be properly initialized
+#     2: The file etc/prefs.sh should be used for setting the variables enabling
+#        the compilation of the various packages
+# Author:
+#     Martin Beaudoin, Hydro-Quebec, (2015)
+#
+#------------------------------------------------------------------------------
+# run from third-party directory only
+cd ${0%/*} || exit 1
+
+wmakeCheckPwd "$WM_THIRD_PARTY_DIR" || {
+    echo "Error: Current directory is not \$WM_THIRD_PARTY_DIR"
+    echo "    The environment variables are inconsistent with the installation."
+    echo "    Check the foam-extend entries in your dot-files and source them."
+    exit 1
+}
+. tools/makeThirdPartyFunctionsForRPM
+#------------------------------------------------------------------------------
+
+echo ========================================
+echo Starting ThirdParty AllMake: Stage1
+echo ========================================
+echo
+
+# Gcc 4.9.2 and companion libraries
+#
+[ ! -z "$WM_THIRD_PARTY_USE_GCC_492" ] && {
+    echo "Building gcc-4.9.2"
+    ( rpm_make -p gcc-4.9.2  -s gcc-4.9.2.spec  -u http://ftpmirror.gnu.org/gcc/gcc-4.9.2/gcc-4.9.2.tar.gz      )
+}
+
+# Clang 3.6.0
+#
+[ ! -z "$WM_THIRD_PARTY_USE_LLVM_360" ] && {
+    echo "Building llvm and clang 3.6.0"
+    ( rpm_make -p llvm-3.6.0 -s llvm-3.6.0.spec -u http://llvm.org/releases/3.6.0/llvm-3.6.0.src.tar.xz    )
+}
+
+# Python 2.7
+#
+[ ! -z "$WM_THIRD_PARTY_USE_PYTHON_27" ] && {
+    echo "Building python 2.7"
+    ( rpm_make -p Python-2.7  -s Python-2.7.spec -u http://www.python.org/ftp/python/2.7/Python-2.7.tgz        )
+}
+
+# m4 1.4.16
+#
+[ ! -z "$WM_THIRD_PARTY_USE_M4_1416" ] && {
+    echo "Building m4 1.4.16"
+    # You need a recent version of m4 in order to compile a recent version of bison
+    ( rpm_make -p m4-1.4.16  -s m4-1.4.16.spec   -u http://ftpmirror.gnu.org/m4/m4-1.4.16.tar.gz               )
+}
+
+# bison 2.7
+#
+[ ! -z "$WM_THIRD_PARTY_USE_BISON_27" ] && {
+    echo "Building bison 2.7"
+    # You need a recent version of m4 in order to compile a recent version of bison
+    ( rpm_make -p bison-2.7 -s bison-2.7.spec -u http://ftpmirror.gnu.org/bison/bison-2.7.tar.gz           )
+}
+
+# flex 2.5.35
+#
+[ ! -z "$WM_THIRD_PARTY_USE_FLEX_2535" ] && {
+    echo "Building flex 2.5.35"
+    ( rpm_make -p flex-2.5.35 -s flex-2.5.35.spec -u https://github.com/westes/flex/archive/flex-2-5-35.tar.gz )
+}
+
+# cmake 3.11.4
+#
+[ ! -z "$WM_THIRD_PARTY_USE_CMAKE_3114" ] && {
+    echo "Building cmake 3.11.4"
+    ( rpm_make -p cmake-3.11.4 -s cmake-3.11.4.spec -u http://www.cmake.org/files/v3.11/cmake-3.11.4.tar.gz        )
+}
+
+echo ========================================
+echo Done ThirdParty AllMake: Stage1
+echo ========================================
+echo
+
+# ----------------------------------------------------------------- end-of-file

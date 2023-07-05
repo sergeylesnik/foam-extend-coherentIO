@@ -1,0 +1,4 @@
+#!/bin/bash
+
+./AllClean
+rm -r packages/ rpmBuild/tmp/ rpmBuild/TGZS/ rpmBuild/BUILDROOT/ rpmBuild/rpmDB/* rpmBuild/RPMS/* rpmBuild/BUILD/*

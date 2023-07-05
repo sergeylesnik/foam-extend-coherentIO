@@ -1,0 +1,271 @@
+#!/bin/bash
+#------------------------------------------------------------------------------
+# =========                 |
+# \\      /  F ield         | foam-extend: Open Source CFD
+#  \\    /   O peration     |
+#   \\  /    A nd           | For copyright notice see file Copyright
+#    \\/     M anipulation  |
+#------------------------------------------------------------------------------
+# License
+#     This file is part of foam-extend.
+#
+#     foam-extend is free software: you can redistribute it and/or modify it
+#     under the terms of the GNU General Public License as published by the
+#     Free Software Foundation, either version 3 of the License, or (at your
+#     option) any later version.
+#
+#     foam-extend is distributed in the hope that it will be useful, but
+#     WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#     General Public License for more details.
+#
+#     You should have received a copy of the GNU General Public License
+#     along with foam-extend.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Script
+#     AllMake.stage3
+#
+# Description
+#     Build script for ThirdParty packages: Stage3
+#
+#     The ThirdParty libraries
+#
+# Requirements:
+#     1: Your foam-extend environment must be properly initialized
+#     2: AllMake.stage1 if you are overriding your system compiler
+#     3: AllMake.stage2 if you are overriding your system comm. libraries
+#
+# Author:
+#     Martin Beaudoin, Hydro-Quebec, (2015)
+#
+#------------------------------------------------------------------------------
+# run from third-party directory only
+cd ${0%/*} || exit 1
+
+wmakeCheckPwd "$WM_THIRD_PARTY_DIR" || {
+    echo "Error: Current directory is not \$WM_THIRD_PARTY_DIR"
+    echo "    The environment variables are inconsistent with the installation."
+    echo "    Check the foam-extend entries in your dot-files and source them."
+    exit 1
+}
+. tools/makeThirdPartyFunctionsForRPM
+#------------------------------------------------------------------------------
+
+echo ========================================
+echo Starting ThirdParty AllMake: Stage3
+echo ========================================
+echo
+
+# Metis
+if [ -z "$METIS_SYSTEM" ]
+then
+    # metis 5.1.0
+    #
+    [ ! -z "$WM_THIRD_PARTY_USE_METIS_510" ] && {
+	echo "Building metis 5.1.0"
+	( rpm_make -p metis-5.1.0 -s metis-5.1.0.spec -u http://downloads.sourceforge.net/project/foam-extend/ThirdParty/metis-5.1.0.tar.gz )
+    }
+else
+    echo "Using system installed Metis"
+    echo ""
+fi
+
+# ParMGridGen
+if [ -z "$PARMGRIDGEN_SYSTEM" ]
+then
+    # ParMGridGen 1.0
+    #
+    [ ! -z "$WM_THIRD_PARTY_USE_PARMGRIDGEN_10" ] && {
+	echo "Building ParMGridGen 1.0"
+        #( rpm_make -p ParMGridGen-1.0 -s ParMGridGen-1.0.spec -u http://www.mgnet.org/mgnet/Codes/parmgridgen/ParMGridGen-1.0.tar.gz       )
+	    ( rpm_make -p ParMGridGen-1.0 -s ParMGridGen-1.0.spec -u http://downloads.sourceforge.net/project/foam-extend/ThirdParty/ParMGridGen-1.0.tar.gz )
+    }
+else
+    echo "Using system installed ParMGridGen"
+    echo ""
+fi
+
+# Libccmio
+if [ -z "$LIBCCMIO_SYSTEM" ]
+then
+    # Libccmio 2.6.1
+    #
+    [ ! -z "$WM_THIRD_PARTY_USE_LIBCCMIO_261" ] && {
+	echo "Building Libccmio 2.6.1"
+	( rpm_make -p libccmio-2.6.1 -s libccmio-2.6.1.spec -u http://downloads.sourceforge.net/project/foam-extend/ThirdParty/libccmio-2.6.1.tar.gz  )
+    }
+else
+    echo "Using system installed Libccmio"
+    echo ""
+fi
+
+# Mesquite
+if [ -z "$MESQUITE_SYSTEM" ]
+then
+    # Mesquite 2.1.2
+    #
+    [ ! -z "$WM_THIRD_PARTY_USE_MESQUITE_212" ] && {
+	echo "Building Mesquite 2.1.2"
+	( rpm_make -p mesquite-2.1.2 -s mesquite-2.1.2.spec -u http://downloads.sourceforge.net/project/foam-extend/ThirdParty/mesquite-2.1.2.tar.gz )
+    }
+    # Mesquite 2.3.0
+    #
+    [ ! -z "$WM_THIRD_PARTY_USE_MESQUITE_230" ] && {
+	echo "Building Mesquite 2.3.0"
+	( rpm_make -p mesquite-2.3.0 -s mesquite-2.3.0.spec -u https://software.sandia.gov/mesquite/mesquite-2.3.0.tar.gz )
+	# ( rpm_make -p mesquite-2.3.0 -s mesquite-2.3.0.spec -u http://downloads.sourceforge.net/project/foam-extend/ThirdParty/mesquite-2.3.0.tar.gz )
+    }
+else
+    echo "Using system installed Mesquite"
+    echo ""
+fi
+
+# The following three packages depends on the availability of OpenMPI
+# The macro rpm_make() will make sure to update the ThirdParty environment variables before starting
+# the compilation.
+# Just make sure the OpenMPI environment variables are properly initialized, or that
+# the AllMake.stage2 script completed correctly
+#
+# Scotch
+if [ -z "$SCOTCH_SYSTEM" ]
+then
+    # Scotch 6.0.4
+    #
+    [ ! -z "$WM_THIRD_PARTY_USE_SCOTCH_604" ] && {
+	echo "Building Scotch 6.0.4"
+	#( rpm_make -p scotch-6.0.4 -s scotch-6.0.4.spec -u http://gforge.inria.fr/frs/download.php/file/34618/scotch_6.0.4.tar.gz )
+	( rpm_make -p scotch-6.0.4 -s scotch-6.0.4.spec -u  http://downloads.sourceforge.net/project/foam-extend/ThirdParty/scotch_6.0.4.tar.gz )
+    }
+    # Scotch 6.0.0
+    #
+    [ ! -z "$WM_THIRD_PARTY_USE_SCOTCH_600" ] && {
+	echo "Building Scotch 6.0.0"
+	( rpm_make -p scotch-6.0.0 -s scotch-6.0.0.spec -u http://downloads.sourceforge.net/project/foam-extend/ThirdParty/scotch-6.0.0.tar.gz )
+    }
+else
+    echo "Using system installed Scotch"
+    echo ""
+fi
+
+# ParMetis
+if [ -z "$PARMETIS_SYSTEM" ]
+then
+    # ParMetis 4.0.3
+    #
+    [ ! -z "$WM_THIRD_PARTY_USE_PARMETIS_403" ] && {
+	echo "Building ParMetis 4.0.3"
+	( rpm_make -p parmetis-4.0.3 -s parmetis-4.0.3.spec -u http://glaros.dtc.umn.edu/gkhome/fetch/sw/parmetis/parmetis-4.0.3.tar.gz )
+    }
+else
+    echo "Using system installed ParMetis"
+    echo ""
+fi
+
+# Zoltan
+if [ -z "$ZOLTAN_SYSTEM" ]
+then
+    # Zoltan 3.6
+    #
+    [ ! -z "$WM_THIRD_PARTY_USE_ZOLTAN_36" ] && {
+	echo "Building Zoltan 3.6"
+	( rpm_make -p zoltan-3.6 -s zoltan-3.6.spec -u http://www.cs.sandia.gov/~kddevin/Zoltan_Distributions/zoltan_distrib_v3.6.tar.gz )
+    }
+else
+    echo "Using system installed Zoltan"
+    echo ""
+fi
+
+# PyFoam
+if [ -z "$PYFOAM_SYSTEM" ]
+then
+    # PyFoam 0.6.3
+    #
+    [ ! -z "$WM_THIRD_PARTY_USE_PYFOAM_063" ] && {
+	echo "Building PyFoam 0.6.3"
+	( rpm_make -p PyFoam-0.6.3 -s PyFoam-0.6.3.spec  -u http://openfoamwiki.net/images/c/cb/PyFoam-0.6.3.tar.gz -n PyFoam-0.6.3-1.noarch -a noarch)
+    }
+    # PyFoam 0.6.4
+    #
+    [ ! -z "$WM_THIRD_PARTY_USE_PYFOAM_064" ] && {
+	echo "Building PyFoam 0.6.4"
+	( rpm_make -p PyFoam-0.6.4 -s PyFoam-0.6.4.spec  -u http://openfoamwiki.net/images/3/3b/PyFoam-0.6.4.tar.gz -n PyFoam-0.6.4-1.noarch -a noarch)
+    }
+    # PyFoam 0.6.6
+    #
+    [ ! -z "$WM_THIRD_PARTY_USE_PYFOAM_066" ] && {
+	echo "Building PyFoam 0.6.6"
+	( rpm_make -p PyFoam-0.6.6 -s PyFoam-0.6.6.spec  -u https://openfoamwiki.net/images/a/af/PyFoam-0.6.6.tar.gz -n PyFoam-0.6.6-1.noarch -a noarch)
+    }
+    # PyFoam 0.6.9
+    #
+    [ ! -z "$WM_THIRD_PARTY_USE_PYFOAM_069" ] && {
+	echo "Building PyFoam 0.6.9"
+	( rpm_make -p PyFoam-0.6.9 -s PyFoam-0.6.9.spec  -u https://files.pythonhosted.org/packages/78/f5/8f65b66c8ac0e5415f785809e182dd0f0dc562a42094e1a86bd22c7d7ece/PyFoam-0.6.9.tar.gz -n PyFoam-0.6.9-1.noarch -a noarch)
+    }
+else
+    echo "Using system installed PyFoam"
+    echo ""
+fi
+
+# hwloc
+if [ -z "$HWLOC_SYSTEM" ]
+then
+    # hwloc 2.0.1
+    #
+    [ ! -z "$WM_THIRD_PARTY_USE_HWLOC_201" ] && {
+	echo "Building hwloc 2.0.1"
+    ( rpm_make -p hwloc-2.0.1 -s hwloc-2.0.1.spec  -u http://www.open-mpi.org/software/hwloc/v2.0/downloads/hwloc-2.0.1.tar.gz )
+	# ( rpm_make -p hwloc-2.0.1 -s hwloc-2.0.1.spec  -u http://downloads.sourceforge.net/project/foam-extend/ThirdParty/hwloc-2.0.1.tar.gz )
+    }
+    # hwloc 1.10.1
+    #
+    [ ! -z "$WM_THIRD_PARTY_USE_HWLOC_1101" ] && {
+	echo "Building hwloc 1.10.1"
+    # ( rpm_make -p hwloc-1.10.1 -s hwloc-1.10.1.spec  -u http://www.open-mpi.org/software/hwloc/v1.10/downloads/hwloc-1.10.1.tar.gz )
+	( rpm_make -p hwloc-1.10.1 -s hwloc-1.10.1.spec  -u http://downloads.sourceforge.net/project/foam-extend/ThirdParty/hwloc-1.10.1.tar.gz )
+    }
+    # hwloc 1.7.2
+    #
+    [ ! -z "$WM_THIRD_PARTY_USE_HWLOC_172" ] && {
+	echo "Building hwloc 1.7.2"
+	( rpm_make -p hwloc-1.7.2 -s hwloc-1.7.2.spec  -u http://downloads.sourceforge.net/project/foam-extend/ThirdParty/hwloc-1.7.2.tar.gz )
+    }
+else
+    echo "Using system installed hwloc"
+    echo ""
+fi
+
+# ADIOS2
+if [ -z "$ADIOS2_SYSTEM" ]
+then
+    # ADIOS2 2.8.3
+    #
+    [ ! -z "$WM_THIRD_PARTY_USE_ADIOS2_283" ] && {
+	echo "Building ADIOS2 2.8.3"
+	( rpm_make -p ADIOS2-2.8.3 -s ADIOS2-2.8.3.spec -u https://github.com/ornladios/ADIOS2/archive/v2.8.3.tar.gz )
+    }
+else
+    echo "Using system installed ADIOS2"
+    echo ""
+fi
+
+# PETSC
+if [ -z "$PETSC_SYSTEM" ]
+then
+    # petsc
+    #
+    [ ! -z "$WM_THIRD_PARTY_USE_PETSC" ] && {
+	echo "Building petsc 3.16.5"
+	( rpm_make -p petsc-release -s petsc-release.spec -u https://github.com/petsc/petsc/archive/release.tar.gz )
+    }
+else
+    echo "Using system installed petsc"
+    echo ""
+fi
+
+echo ========================================
+echo Done ThirdParty AllMake: Stage3
+echo ========================================
+echo
+
+# ----------------------------------------------------------------- end-of-file

@@ -1,0 +1,79 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2006                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+application     icoFoamTar;
+
+startFrom       startTime;
+
+startTime       0;
+
+stopAt          endTime;
+
+endTime         0.0095;
+
+deltaT          0.0005;
+
+writeControl    timeStep;
+
+writeInterval   1;
+
+purgeWrite      1;
+
+writeFormat     ascii;
+
+writePrecision  6;
+
+writeCompression off;
+
+timeFormat      general;
+
+timePrecision   6;
+
+runTimeModifiable yes;
+
+functions
+{
+  tarSystemCall
+  {
+    type tarSystemCall;
+    functionObjectLibs ( "libtarSystemCall.so" );
+    // Set to ramDiskUsage true if decomposePar must create tar archives
+    ramDiskUsage true;
+    //---------------------------
+    // IF SO, PLEASE SET CORRECT PATHS
+    //---------------------------
+    pathToRamDisk "/lustre/hpe/ws10/ws10.0/ws/hpcgweis-foam-extend-benchmarks/S1M-c4/uncollated/M/ncpus256/tmp";
+    pathToOriginalCaseFolder "/lustre/hpe/ws10/ws10.0/ws/hpcgweis-foam-extend-benchmarks/S1M-c4/uncollated/M/ncpus256";
+    executeCalls 0();
+    //-------executeCalls--------
+    //1== last written data is written after time-loop back for easier restart
+    //0== no backup (but still in processorxxx.tar
+    //---------------------------
+    endCalls 1("");                //should be always turned on
+    restartData false;
+    deleteStartTimeFolders true;
+    onlyRestartAndDataInTar false; //constant-folder plus last time folder
+    writeCalls 1("");              //1=active, 0=no data (lost in ramdisk if set to true)
+    endSyncDataMaster 0();         //no folder like postProcessing or ownData is synced
+    writeSyncDataMaster 0();       //no folder like postProcessing or ownData is synced
+    tarAggregationCount 1;
+    outputControl outputTime;
+    writeInterval 1;
+  }
+}
+
+// ************************************************************************* //
