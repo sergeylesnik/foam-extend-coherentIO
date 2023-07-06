@@ -605,6 +605,23 @@ void Foam::argList::parse
             // Establish rootPath_/globalCase_/case_ for master
             getRootCase();
 
+            // Check the IO write format
+            fileName ctrlDictName = rootPath_/globalCase_/"system/controlDict";
+            IFstream controlDictStream(ctrlDictName);
+
+            if (!controlDictStream.good())
+            {
+                FatalError
+                    << "Cannot read "
+                    << controlDictStream.name()
+                    << exit(FatalError);
+            }
+
+            const dictionary controlDict(controlDictStream);
+            const word writeFormat(controlDict.lookup("writeFormat"));
+            isCoherentFormat =
+                (IOstream::formatEnum(writeFormat) == IOstream::COHERENT);
+
             // See if running distributed (different roots for different procs)
             label dictNProcs = -1;
             fileName source;
@@ -672,31 +689,30 @@ void Foam::argList::parse
             // - decomposition to fewer processors : nProcs = nProcDirs
             if (dictNProcs > Pstream::nProcs())
             {
-                FatalError
-                    << source
-                    << " specifies " << dictNProcs
-                    << " processors but job was started with "
-                    << Pstream::nProcs() << " processors."
-                    << exit(FatalError);
+                if (isCoherentFormat)
+                {
+                    Warning
+                        << source
+                        << " specifies " << dictNProcs
+                        << " processors but job was started with "
+                        << Pstream::nProcs() << " processors." << nl
+                        << "    " << IOstream::formatEnum(writeFormat)
+                        << " format allows restart with variable number of"
+                        << " processors but the decomposition may not be"
+                        << " optimal."
+                        << endl;
+                }
+                else
+                {
+                    FatalError
+                        << source
+                        << " specifies " << dictNProcs
+                        << " processors but job was started with "
+                        << Pstream::nProcs() << " processors."
+                        << exit(FatalError);
+                }
             }
 
-
-            // Check the IO write format
-            source = rootPath_/globalCase_/"system/controlDict";
-            IFstream controlDictStream(source);
-
-            if (!controlDictStream.good())
-            {
-                FatalError
-                    << "Cannot read "
-                    << controlDictStream.name()
-                    << exit(FatalError);
-            }
-
-            const dictionary controlDict(controlDictStream);
-            const word writeFormat(controlDict.lookup("writeFormat"));
-            isCoherentFormat =
-                (IOstream::formatEnum(writeFormat) == IOstream::COHERENT);
 
             // Distributed data
             if (roots.size())
@@ -742,7 +758,7 @@ void Foam::argList::parse
             {
                 // Possibly going to fewer processors.
                 // Check if all procDirs are there.
-                if (dictNProcs < Pstream::nProcs())
+                if (!isCoherentFormat && dictNProcs < Pstream::nProcs())
                 {
                     label nProcDirs = 0;
                     while

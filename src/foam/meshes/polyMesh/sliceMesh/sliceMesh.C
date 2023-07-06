@@ -50,35 +50,48 @@ void Foam::sliceMesh::readMesh(const fileName& pathname)
 {
     using InitStrategyPtr = std::unique_ptr<InitStrategy>;
     using InitIndexComp = InitFromADIOS<labelList>;
+    using PartitionIndexComp = NaivePartitioningFromADIOS<labelList>;
 
     Foam::IndexComponent meshSlice{};
     if (Pstream::parRun())
     {
-        InitStrategyPtr init_partitionStarts
+        std::unique_ptr<InitIndexComp> init_partitionStarts
         (
             new InitIndexComp("mesh", pathname, "partitionStarts")
         );
-        meshSlice.add
-        (
-            "mesh",
-            "partitionStarts",
-            std::move(init_partitionStarts),
-            Foam::start_from_myProcNo,
-            Foam::count_two
-        );
+        if (init_partitionStarts->size() == Pstream::nProcs()+1)
+        {
+            meshSlice.add
+            (
+                "mesh",
+                "partitionStarts",
+                std::move(init_partitionStarts),
+                Foam::start_from_myProcNo,
+                Foam::count_two
+            );
 
-        InitStrategyPtr init_ownerStarts
-        (
-            new InitIndexComp("mesh", pathname, "ownerStarts")
-        );
-        meshSlice.node("partitionStarts")->add
-        (
-            "mesh",
-            "ownerStarts",
-            std::move(init_ownerStarts),
-            Foam::start_from_front,
-            Foam::count_from_front_plus_one
-        );
+            InitStrategyPtr init_ownerStarts
+            (
+                new InitIndexComp("mesh", pathname, "ownerStarts")
+            );
+            meshSlice.node("partitionStarts")->add
+            (
+                "mesh",
+                "ownerStarts",
+                std::move(init_ownerStarts),
+                Foam::start_from_front,
+                Foam::count_from_front_plus_one
+            );
+        }
+        else
+        {
+            InitStrategyPtr init_ownerStarts
+            (
+                new PartitionIndexComp("mesh", pathname, "ownerStarts")
+            );
+            meshSlice.add("mesh", "ownerStarts", std::move(init_ownerStarts));
+        }
+
     }
     else
     {

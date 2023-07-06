@@ -93,6 +93,19 @@ struct InitFromADIOS
         name_{name}
     {}
 
+    label size() const
+    {
+        auto adiosStreamPtr = adiosReading{}.createStream();
+        adiosStreamPtr->open(type_, pathname_);
+        FieldType dummy{};
+        return adiosStreamPtr->getBufferSize(name_, dummy.data());
+    }
+
+    explicit operator bool() const
+    {
+        return this->size();
+    }
+
 private:
 
     void execute
@@ -201,6 +214,59 @@ private:
 
 };
 
+
+template<typename FieldType = InitStrategy::index_container>
+struct NaivePartitioningFromADIOS
+:
+    public InitStrategy
+{
+    NaivePartitioningFromADIOS() = default;
+
+    explicit NaivePartitioningFromADIOS
+    (
+        const Foam::string& type,
+        const Foam::string& pathname,
+        const Foam::string& name
+    )
+    :
+        type_{type},
+        pathname_{pathname},
+        name_{name}
+    {}
+
+private:
+
+    void execute
+    (
+        FieldType& data,
+        Foam::InitStrategy::labelPair& start_count
+    ) final
+    {
+        auto adiosStreamPtr = adiosReading{}.createStream();
+        adiosStreamPtr->open(type_, pathname_);
+
+        // Naive partitioning based on total size of input data
+        label total_size = adiosStreamPtr->getBufferSize(name_, data.data());
+        total_size--;
+        label partition_size = total_size / Pstream::nProcs();
+        labelList start(1, partition_size * Pstream::myProcNo());
+        labelList count = (Pstream::myProcNo() == Pstream::nProcs()-1) ?
+                          labelList({total_size - start[0]}) :
+                          labelList({partition_size});
+        count[0] += 1;
+        data.resize(count[0]);
+
+        adiosStreamPtr->transfer(name_, data, start, count);
+        adiosStreamPtr->close();
+    }
+
+    Foam::string type_{};
+
+    Foam::string pathname_{};
+
+    Foam::string name_{};
+
+};
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

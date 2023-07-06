@@ -64,7 +64,8 @@ Foam::IFCstreamAllocator::IFCstreamAllocator
     if (format != IOstream::COHERENT)
     {
         FatalErrorInFunction
-            << "IO Format is not COHERENT" << endl;
+            << "IO Format is not COHERENT"
+            << exit(FatalError);
     }
 
     ifPtr_ = new std::istringstream();

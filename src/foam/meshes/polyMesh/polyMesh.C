@@ -365,6 +365,7 @@ Foam::polyMesh::polyMesh(const IOobject& io)
         this->checkOut( allFaces_ );
         this->checkOut( owner_ );
         this->checkOut( neighbour_ );
+        this->checkOut( boundary_ );
 
         // Clear addressing. Keep geometric props for mapping.
         clearAddressing();
