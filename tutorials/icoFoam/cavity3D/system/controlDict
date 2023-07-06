@@ -1,0 +1,76 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2006                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+application     icoFoam;
+
+startFrom       startTime;
+// startFrom       latestTime;
+
+startTime       0.00;
+
+stopAt          endTime;
+
+endTime         0.06;
+
+deltaT          0.002;
+
+writeControl    timeStep;
+
+writeInterval   1;
+
+purgeWrite      0;
+
+writeFormat     coherent;
+
+writePrecision  6;
+
+writeCompression off;
+
+timeFormat      general;
+
+timePrecision   6;
+
+runTimeModifiable yes;
+
+DebugSwitches
+{
+    // regIOobject 1;
+    // objectRegistry 1;
+    // IOobject 1;
+    // DebugIOList 2;
+    // DebugIOUList 2;
+    // volScalarField 1;
+    // volVectorField 1;
+    // surfaceScalarField 1;
+    // IFCstream 1;
+    // Pstream 1;
+    // OFstream 1;
+
+    // fvMesh 1;
+    // polyMesh 1;
+    // time 1;
+
+    // dictionary 1;
+    // ISstream 1;
+    // IFstream 1;
+    // Ostream 1;
+    // OSstream 2;
+
+    // adiosCore 1;
+}
+
+// ************************************************************************* //
