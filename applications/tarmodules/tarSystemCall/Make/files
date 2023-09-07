@@ -1,4 +1,0 @@
-tarSystemCall.C
-tarSystemCallFunctionObject.C
-
-LIB = $(FOAM_USER_LIBBIN)/libtarSystemCall

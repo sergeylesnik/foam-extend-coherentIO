@@ -1,3 +1,0 @@
-icoFoamTar.C
-
-EXE = $(FOAM_APPBIN)/icoFoamTar

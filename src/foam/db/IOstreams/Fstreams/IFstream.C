@@ -28,7 +28,7 @@ License
 #include "OSspecific.H"
 #include "debug.H"
 #include "gzstream.h"
-#include "adiosFileStream.H"
+#include "SliceStream.H"
 #include "IStringStream.H"
 
 #include <fstream>
@@ -66,8 +66,7 @@ Foam::IFstreamAllocator::IFstreamAllocator
 :
     ifPtr_(nullptr),
     bufStr_(),
-    //adiosPtr_(nullptr),
-    adiosStreamPtr_(nullptr),
+    sliceStreamPtr_(nullptr),
     compression_(IOstream::UNCOMPRESSED)
 {
     if (pathname.empty())
@@ -83,7 +82,7 @@ Foam::IFstreamAllocator::IFstreamAllocator
     {
         ifPtr_ = new std::istringstream();
 
-        if ( !adiosStreamPtr_ ) //|| !adiosPtr_ )
+        if ( !sliceStreamPtr_ )
         {
             allocateAdios();
         }
@@ -138,8 +137,7 @@ Foam::IFstreamAllocator::~IFstreamAllocator()
 
 void Foam::IFstreamAllocator::allocateAdios()
 {
-    //adiosPtr_.reset(new adiosRead());
-    adiosStreamPtr_ = adiosReading{}.createStream();
+    sliceStreamPtr_ = SliceReading{}.createStream();
 }
 
 
@@ -224,13 +222,10 @@ Foam::Istream& Foam::IFstream::parread(parIOType* buf, const string& blockId)
             << exit(FatalIOError);
     }
 
-    if ( !adiosStreamPtr_ ) //|| !adiosPtr_ )
+    if ( !sliceStreamPtr_ )
     {
         allocateAdios();
     }
-
-    //adiosPtr_->read(buf, blockId);
-    //adiosStreamPtr_->transfer(blockId, buf);
 
     return *this;
 }

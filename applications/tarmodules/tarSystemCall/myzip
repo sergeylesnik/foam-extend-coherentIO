@@ -1,3 +1,0 @@
-#!/bin/bash
-#rm mysystemCall.zip;zip -r mysystemCall.zip *.C *.H Make/files Make/options mymake myclean
-rm tarSystemCall.tar.gz;tar cfvz  tarSystemCall.tar.gz *.C *.H Make/files Make/options mymake myclean controlDict

@@ -128,14 +128,6 @@ void Foam::domainDecomposition::decomposeMesh(const bool filterEmptyPatches)
         Pout<< "\nCalculating original mesh data" << endl;
     }
 
-    // Set references to the original mesh
-    const polyBoundaryMesh& patches = mesh_.boundaryMesh();
-
-    // Access all faces to grab the zones
-    const faceList& allFaces = mesh_.allFaces();
-    const labelList& owner = mesh_.faceOwner();
-    const labelList& neighbour = mesh_.faceNeighbour();
-
     // loop through the list of processor labels for the cell and add the
     // cell shape to the list of cells for the appropriate processor
 
@@ -164,16 +156,31 @@ void Foam::domainDecomposition::decomposeMesh(const bool filterEmptyPatches)
         }
 
         // Convert linked lists into normal lists
-        forAll (procCellList, procI)
+        #pragma omp parallel for
+        for (label procI = 0; procI < procCellList.size(); ++procI)
         {
             procCellAddressing_[procI] = procCellList[procI];
         }
     }
 
+  if (mesh_.time().writeFormat() == IOstream::COHERENT)
+  {
+      Info << "Skipping stones." << endl;
+  }
+  if (mesh_.time().writeFormat() != IOstream::COHERENT)
+  {
     if (debug)
     {
         Pout << "\nDistributing faces to processors" << endl;
     }
+
+    // Set references to the original mesh
+    const polyBoundaryMesh& patches = mesh_.boundaryMesh();
+
+    // Access all faces to grab the zones
+    const faceList& allFaces = mesh_.allFaces();
+    const labelList& owner = mesh_.faceOwner();
+    const labelList& neighbour = mesh_.faceNeighbour();
 
     // Loop through internal faces and decide which processor they belong to
     // First visit all internal faces. If cells at both sides belong to the
@@ -1217,6 +1224,7 @@ void Foam::domainDecomposition::decomposeMesh(const bool filterEmptyPatches)
         globallySharedPoints_ = gSharedPoints.toc();
         sort(globallySharedPoints_);
     }
+  }
 }
 
 

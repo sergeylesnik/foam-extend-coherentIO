@@ -342,17 +342,18 @@ inline void Foam::reverse(UList<T>& ul, const label n)
     }
 }
 
+
 template<class T>
 inline void Foam::reverse(UList<T>& ul)
 {
     reverse(ul, ul.size());
 }
 
+
 template<class T>
 void Foam::swap( UList<T>& a, UList<T>& b )
 {
     a.swap(b);
 }
-
 
 // ************************************************************************* //

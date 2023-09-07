@@ -284,6 +284,9 @@ public:
                 IOstream::compressionType
             ) const;
 
+            //- Write using stream option
+            virtual bool writeObject(IOstreamOption streamOpt) const;
+
             //- Write using setting from DB
             virtual bool write() const;
 
@@ -295,6 +298,14 @@ public:
                 IOstream::streamFormat format,
                 IOstream::versionNumber version,
                 IOstream::compressionType compression
+            ) const;
+
+            //- Write to file stream with stream option
+            virtual bool writeToStream
+            (
+                const fileName &pathname,
+                ios_base::openmode mode,
+                IOstreamOption streamOpt
             ) const;
 
 

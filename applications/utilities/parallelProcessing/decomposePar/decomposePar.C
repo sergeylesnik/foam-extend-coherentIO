@@ -265,18 +265,6 @@ int main(int argc, char *argv[])
         )
     );
 
-    const dictionary& controlDict(runTime.controlDict());
-    bool ramDiskUsage_ = false;
-    if (controlDict.isDict("functions"))
-    {
-        const dictionary& functionSubDict(controlDict.subDict("functions"));
-        if (functionSubDict.isDict("tarSystemCall"))
-        {
-            const dictionary& tarSystemCallDict(functionSubDict.subDict("tarSystemCall"));
-            ramDiskUsage_ = tarSystemCallDict.lookupOrDefault("ramDiskUsage", false);
-        }
-    }
-
     // Decompose the mesh
     if (!decomposeFieldsOnly)
     {
@@ -284,7 +272,7 @@ int main(int argc, char *argv[])
 
         meshDecomp.writeDecomposition();
 
-        adiosRepo::instance()->clear();
+        SliceStreamRepo::instance()->clear();
     }
 
     if (!decomposeMeshOnly)
@@ -410,15 +398,6 @@ int main(int argc, char *argv[])
     for (label procI = 0; procI < meshDecomp.nProcs(); procI++)
     {
         Info<< "Processor " << procI << ": field transfer" << endl;
-
-        if (ramDiskUsage_)
-        {
-            std::ostringstream exeStream;
-            exeStream << "tar -xf processor" << procI << ".tar "; //<< " && rm -r processor" << procI;
-            std::string executeString = exeStream.str();
-            Info<< executeString << endl;
-            Foam::system(executeString);
-        }
 
         // open the database
         Time processorDb
@@ -575,14 +554,6 @@ int main(int argc, char *argv[])
             }
         }
 
-        if (ramDiskUsage_)
-        {
-            std::ostringstream exeStream;
-            exeStream << "tar -uf processor" << procI << ".tar processor" << procI << "/* ;" << "rm -r processor" << procI;
-            std::string executeString = exeStream.str();
-            Info<< executeString << endl;
-            Foam::system(executeString);
-        }
     }
     } // for-loop on procI
     } // if ( IOstream::COHERENT )

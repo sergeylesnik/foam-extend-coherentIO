@@ -264,14 +264,7 @@ public:
 
         label nComponents() const
         {
-            if constexpr (is_vectorspace<typename T::value_type>::value)
-            {
-                return T::value_type::nComponents;
-            }
-            else
-            {
-                return 1;
-            }
+            return nComponentsOf<typename T::value_type>();
         }
 
         void resize(const label newSize)

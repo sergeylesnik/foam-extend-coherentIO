@@ -169,7 +169,7 @@ public:
             Ostream& write(const char*, std::streamsize);
 
             //- Write binary block into second stream
-            virtual Ostream& parwrite(uListProxyBase*);
+            virtual Ostream& parwrite(std::unique_ptr<uListProxyBase>);
 
             Ostream& stringStream();
 

@@ -34,23 +34,18 @@ License
 #include "treeDataCell.H"
 #include "MeshObject.H"
 #include "pointMesh.H"
-#include "adiosWriting.H"
-#include "adiosFileStream.H"
-#include "adiosWritePrimitives.H"
+#include "SliceWriting.H"
+#include "SliceStream.H"
+#include "sliceWritePrimitives.H"
 
 #include "DynamicList.H"
 #include <numeric>
 #include <set>
 #include <map>
 #include <array>
-#include "slicePermutation.H"
+#include "SlicePermutation.H"
 
-#include "sliceMesh.H"
-#include "slicePermutation.H"
-#include "sliceProcPatch.H"
-#include "Offsets.H"
-#include "Slice.H"
-#include "sliceMap.H"
+#include "CoherentMesh.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
@@ -373,18 +368,18 @@ Foam::polyMesh::polyMesh(const IOobject& io)
         // Clear everything
         clearOut();
 
-        // Create a sliceMesh object and transfer the ownership to the registry
+        // Create a CoherentMesh object and transfer the ownership to the registry
         // in order to enable access later on
-        const sliceMesh& sliceableMeshConst = sliceMesh::New(*(this));
-        sliceMesh& sliceableMesh = const_cast<sliceMesh&>(sliceableMeshConst);
-        neighbour_ = sliceableMesh.polyNeighbours();
-        owner_ = sliceableMesh.polyOwner();
-        allFaces_ = sliceableMesh.polyFaces();
-        allPoints_ = sliceableMesh.polyPoints();
+        const CoherentMesh& coherentMeshConst = CoherentMesh::New(*(this));
+        CoherentMesh& coherentMesh = const_cast<CoherentMesh&>(coherentMeshConst);
+        coherentMesh.polyNeighbours(neighbour_);
+        coherentMesh.polyOwner(owner_);
+        coherentMesh.polyFaces(allFaces_);
+        coherentMesh.polyPoints(allPoints_);
         faces_.reset( allFaces_, allFaces_.size() );
         points_.reset( allPoints_, allPoints_.size() );
 
-        Foam::List<Foam::polyPatch*> procPatches = sliceableMesh.polyPatches( boundary_ );
+        Foam::List<Foam::polyPatch*> procPatches = coherentMesh.polyPatches( boundary_ );
         addPatches(procPatches, false);
 
         bounds_ = boundBox( allPoints_ );
@@ -460,6 +455,13 @@ Foam::polyMesh::polyMesh(const IOobject& io)
                 )
             );
         }
+
+        // TODO: Is this what we want, for instance, for dynamic meshes?
+        this->checkOut( allPoints_ );
+        this->checkOut( allFaces_ );
+        this->checkOut( owner_ );
+        this->checkOut( neighbour_ );
+        this->checkOut( boundary_ );
     }
 
     // if (exists(owner_.objectPath()))
@@ -1581,52 +1583,67 @@ Foam::labelList determineOffsets2D( const T& input2DList )
     return offsets;
 }
 
+
 bool Foam::polyMesh::write() const
 {
     if (time().writeFormat() == IOstream::COHERENT)
     {
         // Write mesh to a separate file
         auto path = pointsInstance()/meshDir();
-        auto adiosStreamPtr = adiosWriting{}.createStream();
-        adiosStreamPtr->open("mesh", path);
+        auto sliceStreamPtr = SliceWriting{}.createStream();
+        sliceStreamPtr->access("mesh", path);
 
-        slicePermutation sliceablePermutation{ *this };
+        SlicePermutation sliceablePermutation{ *this };
 
-        // Re-order faces
-        faceList adiosFaces( allFaces_ );
-        sliceablePermutation.generateSlice( adiosFaces );
-        Foam::labelList adiosOwner( owner_ );
-        sliceablePermutation.generateSlice( adiosOwner );
-        Foam::pointField adiosPoints( allPoints_ );
-        sliceablePermutation.generateSlice( adiosPoints );
-
+        faceList sliceFaces = sliceablePermutation.retrieveFaces();
         // Linearize faces and points
         label k = 0;
-        Foam::label linearSizeOfFaces = allFaces_.linearSize();
-        Foam::List<Foam::label> linearizedAdiosFaces( linearSizeOfFaces, 0 );
-        forAll( adiosFaces, i ) {
-           forAll( adiosFaces[i], j ) {
-               linearizedAdiosFaces[k] = adiosFaces[i][j];
+        Foam::label linearSizeOfFaces =
+            std::accumulate
+            (
+                allFaces_.begin(),
+                allFaces_.end(),
+                0,
+                [] (label size, Foam::face input)
+                {
+                    return std::move(size) + input.size();
+                }
+            );
+        Foam::List<Foam::label> linearizedFaces( linearSizeOfFaces, 0 );
+        forAll( sliceFaces, i )
+        {
+           forAll( sliceFaces[i], j )
+           {
+               linearizedFaces[k] = sliceFaces[i][j];
                ++k;
            }
         }
 
-        auto faceStarts = determineOffsets2D( adiosFaces ); // Generate offsets of linearized face list
-        adiosStreamPtr->transfer( "faceStarts",
-                                  { faceStarts.size() },
-                                  { 0 },
-                                  { faceStarts.size() },
-                                  faceStarts.cdata() );
-        adiosStreamPtr->transfer( "faces",
-                                  { linearizedAdiosFaces.size() },
-                                  { 0 },
-                                  { linearizedAdiosFaces.size() },
-                                  linearizedAdiosFaces.cdata() );
+        auto faceStarts = determineOffsets2D( sliceFaces ); // Generate offsets of linearized face list
+        sliceStreamPtr->put
+        (
+            "faceStarts",
+            {faceStarts.size()},
+            {0},
+            {faceStarts.size()},
+            faceStarts.cdata()
+        );
+        sliceStreamPtr->put
+        (
+            "faces",
+            {linearizedFaces.size()},
+            {0},
+            {linearizedFaces.size()},
+            linearizedFaces.cdata()
+        );
+        sliceFaces.clear();
 
+        Foam::labelList sliceOwner(owner_);
+        sliceablePermutation.apply(sliceOwner);
         // Generate ownerStarts
         // - Takes into account if cell is not owning any faces.
         labelList ownerStarts( cells().size() + 1, 0 );
-        for (auto ownerId : adiosOwner )
+        for (const auto& ownerId : sliceOwner )
         {
             ownerStarts[ownerId+1] += 1;
         }
@@ -1634,31 +1651,47 @@ bool Foam::polyMesh::write() const
         {
             ownerStarts[ownerId] += ownerStarts[ownerId-1];
         }
-        adiosStreamPtr->transfer( "ownerStarts",
-                                  { ownerStarts.size() },
-                                  { 0 },
-                                  { ownerStarts.size() },
-                                  ownerStarts.cdata() );
+        sliceStreamPtr->put
+        (
+            "ownerStarts",
+            {ownerStarts.size()},
+            {0},
+            {ownerStarts.size()},
+            ownerStarts.cdata()
+        );
+        sliceOwner.clear();
 
         // Generate local neighbours
-        Foam::labelList adiosNeighbours;
-        sliceablePermutation.generateSlice( adiosNeighbours, *this );
-        adiosStreamPtr->transfer( "neighbours",
-                                  { adiosNeighbours.size() },
-                                  { 0 },
-                                  { adiosNeighbours.size() },
-                                  adiosNeighbours.cdata() );
+        Foam::labelList sliceNeighbours;
+        sliceablePermutation.retrieveNeighbours( sliceNeighbours, *this );
+        sliceStreamPtr->put
+        (
+            "neighbours",
+            {sliceNeighbours.size()},
+            {0},
+            {sliceNeighbours.size()},
+            sliceNeighbours.cdata()
+        );
+        sliceStreamPtr->bufferSync();
+        sliceNeighbours.clear();
+        ownerStarts.clear();
+        linearizedFaces.clear();
+        faceStarts.clear();
 
-        adiosStreamPtr->close();
-
-        adiosWritePrimitives
+        Foam::pointField slicePoints( allPoints_ );
+        sliceablePermutation.apply( slicePoints );
+        sliceWritePrimitives
         (
             "mesh",
             path,
             "points",
-            adiosPoints.size(),
-            adiosPoints.cdata()
+            slicePoints.size(),
+            slicePoints.cdata()
         );
+        slicePoints.clear();
+
+        auto repo = SliceStreamRepo::instance();
+        repo->close();
     }
 
     return regIOobject::write();

@@ -84,7 +84,7 @@ void IFCstream::addProcessorPatchField<fvPatchField, volMesh>
 template<>
 label IFCstream::coherentFieldSize<fvPatchField, volMesh>()
 {
-    return sliceableMesh_.mesh().nCells();
+    return coherentMesh_.mesh().nCells();
 }
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

@@ -497,9 +497,7 @@ public:
         (
             const fileName&,
             ios_base::openmode,
-            IOstream::streamFormat,
-            IOstream::versionNumber,
-            IOstream::compressionType
+            IOstreamOption
         ) const;
 
         //- WriteData member function required by regIOobject

@@ -41,7 +41,7 @@ namespace Foam
 
 //- Forward declaration
 //class adiosCore;
-class adiosRepo;
+class SliceStreamRepo;
 
 /*---------------------------------------------------------------------------*\
                            Class adiosControl Declaration
@@ -49,7 +49,7 @@ class adiosRepo;
 
 class adiosControl
 {
-    std::unique_ptr<adiosRepo> repoPtr_;
+    std::unique_ptr<SliceStreamRepo> repoPtr_;
 
 public:
 

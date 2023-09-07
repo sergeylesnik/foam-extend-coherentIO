@@ -859,9 +859,9 @@ then
     export ADIOS2_FLAGS=$(adios2-config --cxx-flags)
     # TODO: System ADIOS2 is not sufficiently configured. 
 else
-    # Using ThirdParty package for ADIOS2 2.8.3
-    [ -z $WM_THIRD_PARTY_USE_ADIOS_283 ] && [ -e $WM_THIRD_PARTY_DIR/packages/ADIOS2-2.8.3/platforms/$WM_OPTIONS ] && {
-	_foamSource $WM_THIRD_PARTY_DIR/packages/ADIOS2-2.8.3/platforms/$WM_OPTIONS/etc/ADIOS2-2.8.3.sh
+    # Using ThirdParty package for ADIOS2 2.9.1
+    [ -z $WM_THIRD_PARTY_USE_ADIOS_291 ] && [ -e $WM_THIRD_PARTY_DIR/packages/ADIOS2-2.9.1/platforms/$WM_OPTIONS ] && {
+	_foamSource $WM_THIRD_PARTY_DIR/packages/ADIOS2-2.9.1/platforms/$WM_OPTIONS/etc/ADIOS2-2.9.1.sh
     }
 
 fi

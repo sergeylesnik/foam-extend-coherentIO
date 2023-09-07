@@ -42,14 +42,9 @@ SourceFiles
 #ifndef IOstream_H
 #define IOstream_H
 
-#include "char.H"
-#include "bool.H"
-#include "label.H"
-#include "uLabel.H"
-#include "scalar.H"
 #include "fileName.H"
 #include "InfoProxy.H"
-#include "infoSwitch.H"
+#include "IOstreamOption.H"
 
 #include <iostream>
 
@@ -78,6 +73,8 @@ namespace Foam
 \*---------------------------------------------------------------------------*/
 
 class IOstream
+:
+    public IOstreamOption
 {
 
 public:
@@ -85,138 +82,18 @@ public:
     // Public data types
 
         //- Enumeration for whether the stream open or closed
-        enum streamAccess
+        enum streamAccess : char
         {
             OPENED,
             CLOSED
         };
 
-        //- Enumeration for the format of data in the stream
-        enum streamFormat
-        {
-            ASCII,
-            BINARY,
-            COHERENT
-        };
-
-        //- Ostream operator
-        friend Ostream& operator<<(Ostream& os, const streamFormat& sf);
-
-        //- Version number type
-        class versionNumber
-        {
-            //- The version number
-            scalar versionNumber_;
-
-            //- The version number as an integer
-            int index_;
-
-
-        public:
-
-            // Constructors
-
-                //- Construct from number
-                versionNumber(const scalar num)
-                :
-                    versionNumber_(num),
-                    index_(numberToIndex(num))
-                {}
-
-                //- Construct from Istream
-                versionNumber(Istream& is)
-                :
-                    versionNumber_(readScalar(is)),
-                    index_(numberToIndex(versionNumber_))
-                {}
-
-
-            // Member functions
-
-                //- Convert a version number into an index
-                int numberToIndex(const scalar num) const
-                {
-                    return int(10*num + SMALL);
-                }
-
-                //- Return major version
-                int majorVersion() const
-                {
-                    return int(versionNumber_);
-                }
-
-                //- Return minor version
-                int minorVersion() const
-                {
-                    return int(10.0*(versionNumber_ - majorVersion()));
-                }
-
-                //- Return the versionNumber as a character string
-                string str() const;
-
-
-            // Member operators
-
-                //- Are these versionNumbers the same?
-                bool operator==(const versionNumber& vn)
-                {
-                    return index_ == vn.index_;
-                }
-
-                //- Are these versionNumbers different?
-                bool operator!=(const versionNumber& vn)
-                {
-                    return index_ != vn.index_;
-                }
-
-                //- Is this version older than the one given
-                bool operator<(const versionNumber& vn)
-                {
-                    return index_ < vn.index_;
-                }
-
-                //- Is this version the same as or older than the one given
-                bool operator<=(const versionNumber& vn)
-                {
-                    return index_ <= vn.index_;
-                }
-
-                //- Is this version newer than the one given
-                bool operator>(const versionNumber& vn)
-                {
-                    return index_ > vn.index_;
-                }
-
-                //- this version the same as or newer than the one given
-                bool operator>=(const versionNumber& vn)
-                {
-                    return index_ >= vn.index_;
-                }
-
-
-            //- Ostream operator
-            friend Ostream& operator<<(Ostream& os, const versionNumber& vn);
-        };
-
-
-        //- Enumeration for the format of data in the stream
-        enum compressionType
-        {
-            UNCOMPRESSED,
-            COMPRESSED
-        };
-
 
     // Public static data
 
-        //- Original version number
-        static const versionNumber originalVersion;
-
-        //- Current version number
-        static const versionNumber currentVersion;
-
         //- Default precision
         static debug::infoSwitch precision_;
+
 
 private:
 
@@ -224,10 +101,6 @@ private:
 
         //- Name of the stream
         static fileName name_;
-
-        streamFormat format_;
-        versionNumber version_;
-        compressionType compression_;
 
         streamAccess openClosed_;
         ios_base::iostate ioState_;
@@ -273,23 +146,27 @@ public:
 
     // Constructors
 
-        //- Construct setting format and version
-        IOstream
-        (
-            streamFormat format,
-            versionNumber version,
-            compressionType compression=UNCOMPRESSED
-        )
+        //- Default construct
+        IOstream(IOstreamOption streamOpt = IOstreamOption())
         :
-            format_(format),
-            version_(version),
-            compression_(compression),
+            IOstreamOption(streamOpt),
             openClosed_(CLOSED),
             ioState_(ios_base::iostate(0)),
             lineNumber_(0)
         {
             setBad();
         }
+
+        //- Construct setting format and version
+        IOstream
+        (
+            IOstreamOption::streamFormat fmt,
+            IOstreamOption::versionNumber ver,
+            IOstreamOption::compressionType cmp = IOstreamOption::UNCOMPRESSED
+        )
+        :
+            IOstream(IOstreamOption(fmt, ver, cmp))
+        {}
 
 
     // Destructor
@@ -379,70 +256,6 @@ public:
 
 
         // Stream state functions
-
-            //- Return stream format of given format name
-            static streamFormat formatEnum(const word&);
-
-            //- Return current stream format
-            streamFormat format() const
-            {
-                return format_;
-            }
-
-            //- Set the stream format
-            streamFormat format(const streamFormat fmt)
-            {
-                streamFormat fmt0 = format_;
-                format_ = fmt;
-                return fmt0;
-            }
-
-            //- Set the stream format from word
-            streamFormat format(const word& fmt)
-            {
-                streamFormat fmt0 = format_;
-                format_ = formatEnum(fmt);
-                return fmt0;
-            }
-
-            //- Return the stream version
-            versionNumber version() const
-            {
-                return version_;
-            }
-
-            //- Set the stream version
-            versionNumber version(const versionNumber ver)
-            {
-                versionNumber ver0 = version_;
-                version_ = ver;
-                return ver0;
-            }
-
-            //- Return compression of given compression name
-            static compressionType compressionEnum(const word&);
-
-            //- Return the stream compression
-            compressionType compression() const
-            {
-                return compression_;
-            }
-
-            //- Set the stream compression
-            compressionType compression(const compressionType cmp)
-            {
-                compressionType cmp0 = compression_;
-                compression_ = cmp;
-                return cmp0;
-            }
-
-            //- Set the stream compression from word
-            compressionType compression(const word& cmp)
-            {
-                compressionType cmp0 = compression_;
-                compression_ = compressionEnum(cmp);
-                return cmp0;
-            }
 
             //- Return current stream line number
             label lineNumber() const
@@ -543,10 +356,6 @@ public:
                 return *this;
             }
 };
-
-
-Ostream& operator<<(Ostream& os, const IOstream::streamFormat& sf);
-Ostream& operator<<(Ostream& os, const IOstream::versionNumber& vn);
 
 
 // --------------------------------------------------------------------

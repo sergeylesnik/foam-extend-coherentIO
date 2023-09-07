@@ -45,35 +45,4 @@ timePrecision   6;
 
 runTimeModifiable yes;
 
-functions
-{
-  tarSystemCall
-  {
-    type tarSystemCall;
-    functionObjectLibs ( "libtarSystemCall.so" );
-    // Set to ramDiskUsage true if decomposePar must create tar archives
-    ramDiskUsage true;
-    //---------------------------
-    // IF SO, PLEASE SET CORRECT PATHS
-    //---------------------------
-    pathToRamDisk "/lustre/hpe/ws10/ws10.0/ws/hpcgweis-foam-extend-benchmarks/S1M-c4/uncollated/M/ncpus256/tmp";
-    pathToOriginalCaseFolder "/lustre/hpe/ws10/ws10.0/ws/hpcgweis-foam-extend-benchmarks/S1M-c4/uncollated/M/ncpus256";
-    executeCalls 0();
-    //-------executeCalls--------
-    //1== last written data is written after time-loop back for easier restart
-    //0== no backup (but still in processorxxx.tar
-    //---------------------------
-    endCalls 1("");                //should be always turned on
-    restartData false;
-    deleteStartTimeFolders true;
-    onlyRestartAndDataInTar false; //constant-folder plus last time folder
-    writeCalls 1("");              //1=active, 0=no data (lost in ramdisk if set to true)
-    endSyncDataMaster 0();         //no folder like postProcessing or ownData is synced
-    writeSyncDataMaster 0();       //no folder like postProcessing or ownData is synced
-    tarAggregationCount 1;
-    outputControl outputTime;
-    writeInterval 1;
-  }
-}
-
 // ************************************************************************* //

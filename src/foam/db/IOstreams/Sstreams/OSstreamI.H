@@ -31,12 +31,10 @@ inline Foam::OSstream::OSstream
 (
     ostream& os,
     const string& name,
-    streamFormat format,
-    versionNumber version,
-    compressionType compression
+    IOstreamOption streamOpt
 )
 :
-    Ostream(format, version, compression),
+    Ostream(streamOpt),
     name_(name),
     os_(os)
 {

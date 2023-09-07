@@ -1,2 +1,0 @@
-#!/bin/bash
-rm startTarCase.tar.gz;tar cfvz  startTarCase.tar.gz *.C *.H Make/files Make/options mymake myclean thirdParty/myreadme

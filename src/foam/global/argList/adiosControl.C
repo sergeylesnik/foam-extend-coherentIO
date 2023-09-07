@@ -24,13 +24,13 @@ License
 \*---------------------------------------------------------------------------*/
 
 #include "adiosControl.H"
-#include "adiosRepo.H"
+#include "SliceStreamRepo.H"
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 Foam::adiosControl::adiosControl()
 :
-    repoPtr_(new adiosRepo())
+    repoPtr_(new SliceStreamRepo())
 {}
 
 

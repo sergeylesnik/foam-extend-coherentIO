@@ -304,7 +304,7 @@ Foam::Ostream& Foam::OSstream::write(const char* buf, std::streamsize count)
 }
 
 
-Foam::Ostream& Foam::OSstream::parwrite(uListProxyBase* uListProxyPtr)
+Foam::Ostream& Foam::OSstream::parwrite(std::unique_ptr<uListProxyBase> uListProxyPtr)
 {
     notImplemented("Ostream& OSstream::parwrite(const parIOType*, const label)");
     setBad();

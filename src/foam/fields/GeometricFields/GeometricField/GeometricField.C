@@ -134,10 +134,7 @@ Foam::GeometricField<Type, PatchField, GeoMesh>::readField(Istream& is)
         IFCstream& ifc = dynamic_cast<IFCstream&>(is);
         return readField
         (
-            ifc.readToDict<PatchField, GeoMesh>
-            (
-                pTraits<PrimitiveType>::typeName
-            )
+            ifc.readToDict<Type, PatchField, GeoMesh>()
         );
     }
     else
@@ -1024,14 +1021,12 @@ bool Foam::GeometricField<Type, PatchField, GeoMesh>::writeToStream
 (
     const fileName& pathname,
     ios_base::openmode mode,
-    IOstream::streamFormat fmt,
-    IOstream::versionNumber ver,
-    IOstream::compressionType cmp
+    IOstreamOption streamOpt
 ) const
 {
-    if (fmt != IOstream::COHERENT)
+    if (streamOpt.format() != IOstream::COHERENT)
     {
-        return regIOobject::writeToStream(pathname, mode, fmt, ver, cmp);
+        return regIOobject::writeToStream(pathname, mode, streamOpt);
     }
 
     OFCstream<Type, PatchField, GeoMesh> os
@@ -1039,9 +1034,7 @@ bool Foam::GeometricField<Type, PatchField, GeoMesh>::writeToStream
         pathname,
         this->mesh().thisDb(),
         mode,
-        fmt,
-        ver,
-        cmp
+        streamOpt
     );
 
     // If any of these fail, return (leave error handling to Ostream class)

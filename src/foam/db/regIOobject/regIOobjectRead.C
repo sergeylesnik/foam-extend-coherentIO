@@ -27,7 +27,6 @@ License
 #include "IFstream.H"
 #include "objectRegistry.H"
 #include "PstreamReduceOps.H"
-#include "adiosPaths.H"
 #include <string>
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //

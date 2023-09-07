@@ -34,8 +34,8 @@ namespace Foam
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 // Define the default IOstream versions and precision
 
-const IOstream::versionNumber IOstream::originalVersion(0.5);
-const IOstream::versionNumber IOstream::currentVersion(2.0);
+const IOstream::versionNumber IOstreamOption::originalVersion(0.5);
+const IOstream::versionNumber IOstreamOption::currentVersion(2.0);
 
 Foam::debug::infoSwitch
 IOstream::precision_

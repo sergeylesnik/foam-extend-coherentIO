@@ -26,7 +26,7 @@ License
 #include "objectRegistry.H"
 #include "foamTime.H"
 
-#include "adiosRepo.H"
+#include "SliceStreamRepo.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
@@ -256,6 +256,12 @@ Foam::label Foam::objectRegistry::getEvent() const
 }
 
 
+Foam::IOstreamOption::streamMode Foam::objectRegistry::streamMode() const
+{
+    return streamMode_;
+}
+
+
 bool Foam::objectRegistry::checkIn(regIOobject& io) const
 {
     if (objectRegistry::debug)
@@ -324,6 +330,12 @@ bool Foam::objectRegistry::checkOut(regIOobject& io) const
 }
 
 
+void Foam::objectRegistry::streamMode(IOstreamOption::streamMode md)
+{
+    streamMode_ = md;
+}
+
+
 void Foam::objectRegistry::rename(const word& newName)
 {
     regIOobject::rename(newName);
@@ -379,11 +391,57 @@ bool Foam::objectRegistry::readIfModified()
 }
 
 
+bool Foam::objectRegistry::write() const
+{
+    bool writeBulkData = false;
+    auto destination = IOstreamOption::TIME;
+    if (time().controlDict().lookupOrDefault("writeBulkData", false))
+    {
+        writeBulkData = true;
+        destination = IOstreamOption::CASE;
+    }
+
+    IOstreamOption streamOpt
+    (
+        time().writeFormat(),
+        IOstream::currentVersion,
+        time().writeCompression(),
+        streamMode_,  // ToDoIO Store this default in foamTime?
+        destination
+    );
+
+    if (time().writeFormat() == IOstreamOption::COHERENT)
+    {
+        auto repo = SliceStreamRepo::instance();
+        repo->open(writeBulkData);
+    }
+
+    bool ok = writeObject(streamOpt);
+
+    if (time().writeFormat() == IOstreamOption::COHERENT)
+    {
+        auto repo = SliceStreamRepo::instance();
+        repo->close(writeBulkData);
+    }
+
+    return ok;
+}
+
+
 bool Foam::objectRegistry::writeObject
 (
     IOstream::streamFormat fmt,
     IOstream::versionNumber ver,
     IOstream::compressionType cmp
+) const
+{
+    return writeObject(IOstreamOption(fmt, ver, cmp));
+}
+
+
+bool Foam::objectRegistry::writeObject
+(
+    IOstreamOption streamOpt
 ) const
 {
     bool ok = true;
@@ -397,18 +455,17 @@ bool Foam::objectRegistry::writeObject
                 << iter.key()
                 << " of type " << iter()->type()
                 << " with writeOpt " << iter()->writeOpt()
-                << " and streamFormat " << fmt
+                << ", streamFormat " << streamOpt.format()
+                << " and streamMode " << streamOpt.mode()
                 << " to file " << iter()->objectPath()
                 << endl;
         }
 
         if (iter()->writeOpt() != NO_WRITE)
         {
-            ok = iter()->writeObject(fmt, ver, cmp) && ok;
+            ok = iter()->writeObject(streamOpt) && ok;
         }
     }
-    auto repo = adiosRepo::instance();
-    repo->close();
 
     return ok;
 }

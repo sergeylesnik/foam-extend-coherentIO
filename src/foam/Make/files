@@ -130,6 +130,7 @@ $(Streams)/token/tokenIO.C
 
 IOstreams = $(Streams)/IOstreams
 $(IOstreams)/IOstream.C
+$(IOstreams)/IOstreamOption.C
 $(IOstreams)/Istream.C
 $(IOstreams)/Ostream.C
 
@@ -163,25 +164,25 @@ $(Pstreams)/OPstream.C
 $(Pstreams)/IPread.C
 $(Pstreams)/OPwrite.C
 
-A2streams = $(Streams)/A2streams
-$(A2streams)/adiosWritePrimitives.C
-$(A2streams)/adiosReadPrimitives.C
+SliceStreams = $(Streams)/SliceStreams
+$(SliceStreams)/sliceWritePrimitives.C
+$(SliceStreams)/sliceReadPrimitives.C
 
-$(A2streams)/adiosPaths.C
-$(A2streams)/adiosRepo.C
-$(A2streams)/adiosStream.C
-$(A2streams)/adiosFileStream.C
-$(A2streams)/create/adiosOutputFeatures.C
-$(A2streams)/create/adiosInputFeatures.C
-$(A2streams)/create/adiosWriting.C
-$(A2streams)/create/adiosReading.C
-$(A2streams)/buffer/adiosBuffer.C
-$(A2streams)/buffer/variableBuffer.C
-$(A2streams)/fieldDataEntry.C
-$(A2streams)/formattingEntry.C
-$(A2streams)/fieldTag.C
-$(A2streams)/IFCstream.C
-$(A2streams)/OFCstream.C
+$(SliceStreams)/SliceStreamPaths.C
+$(SliceStreams)/SliceStreamRepo.C
+$(SliceStreams)/SliceStream.C
+$(SliceStreams)/FileSliceStream.C
+$(SliceStreams)/create/OutputFeatures.C
+$(SliceStreams)/create/InputFeatures.C
+$(SliceStreams)/create/SliceWriting.C
+$(SliceStreams)/create/SliceReading.C
+$(SliceStreams)/buffer/SliceBuffer.C
+$(SliceStreams)/buffer/variableBuffer.C
+$(SliceStreams)/fieldDataEntry.C
+$(SliceStreams)/formattingEntry.C
+$(SliceStreams)/fieldTag.C
+$(SliceStreams)/IFCstream.C
+$(SliceStreams)/OFCstream.C
 
 
 dictionary = db/dictionary
@@ -494,17 +495,18 @@ pointZone = $(polyMesh)/zones/pointZone
 $(pointZone)/pointZone.C
 $(pointZone)/newPointZone.C
 
-sliceMesh = $(polyMesh)/sliceMesh
-$(sliceMesh)/Offsets.C
-$(sliceMesh)/sliceMap.C
-$(sliceMesh)/Slice.C
-$(sliceMesh)/sliceMesh.C
-$(sliceMesh)/slicePermutation.C
-$(sliceMesh)/sliceMeshHelper.C
-$(sliceMesh)/sliceProcPatch.C
-$(sliceMesh)/nonblockConsensus.C
+CoherentMesh = $(polyMesh)/CoherentMesh
+$(CoherentMesh)/Offsets.C
+$(CoherentMesh)/sliceMap.C
+$(CoherentMesh)/Slice.C
+$(CoherentMesh)/CoherentMesh.C
+$(CoherentMesh)/SlicePermutation.C
+$(CoherentMesh)/FragmentPermutation.C
+$(CoherentMesh)/sliceMeshHelper.C
+$(CoherentMesh)/ProcessorPatch.C
+$(CoherentMesh)/nonblockConsensus.C
 
-CoherenceComposite = $(sliceMesh)/CoherenceComposite
+CoherenceComposite = $(CoherentMesh)/CoherenceComposite
 $(CoherenceComposite)/DataComponent.C
 $(CoherenceComposite)/IndexComponent.C
 $(CoherenceComposite)/DataComponentFree.C

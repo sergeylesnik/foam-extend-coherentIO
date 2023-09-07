@@ -50,6 +50,18 @@ namespace Foam
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+template<>
+label IFCstream::coherentFieldSize<fvsPatchField, surfaceMesh>();
+
+template<class Type>
+class IFCstream::reader<Type, fvsPatchField, surfaceMesh>
+{
+
+public:
+
+    static void read(IFCstream&);
+};
+
 template<class Type>
 class OFCstream<Type, fvsPatchField, surfaceMesh>
 :
@@ -76,24 +88,13 @@ public:
         const fileName& pathname,
         const objectRegistry& registry,
         ios_base::openmode mode = ios_base::out|ios_base::trunc,
-        IOstream::streamFormat format = IOstream::ASCII,
-        IOstream::versionNumber version = IOstream::currentVersion,
-        IOstream::compressionType compression = IOstream::UNCOMPRESSED
+        IOstreamOption streamOpt = IOstreamOption()
     );
 
 
     //- Destructor
     virtual ~OFCstream();
 };
-
-template<>
-label IFCstream::coherentFieldSize<fvsPatchField, surfaceMesh>();
-
-template<>
-dictionary& IFCstream::readToDict<fvsPatchField, surfaceMesh>
-(
-    const word& fieldTypeName
-);
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 

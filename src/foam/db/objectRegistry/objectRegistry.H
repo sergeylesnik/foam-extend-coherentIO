@@ -67,6 +67,9 @@ class objectRegistry
         //- Current event
         mutable label event_;
 
+        //- I/O stream mode propagated to the objects
+        IOstreamOption::streamMode streamMode_ = IOstreamOption::DEFERRED;
+
 
     // Private Member Functions
 
@@ -201,6 +204,9 @@ public:
             //- Return new event number.
             label getEvent() const;
 
+            //- Return stream mode
+            IOstreamOption::streamMode streamMode() const;
+
 
         // Edit
 
@@ -213,6 +219,8 @@ public:
             //- Remove an regIOobject from registry
             virtual bool checkOut(regIOobject&) const;
 
+            //- Alter stream mode
+            void streamMode(IOstreamOption::streamMode);
 
         // Reading
 
@@ -227,6 +235,9 @@ public:
 
 
         // Writing
+
+            //- Write using setting from DB and current stream mode
+            virtual bool write() const;
 
             //- writeData function required by regIOobject but not used
             //  for this class, write is used instead
@@ -244,6 +255,9 @@ public:
                 IOstream::versionNumber ver,
                 IOstream::compressionType cmp
             ) const;
+
+            //- Write the objects using stream option
+            virtual bool writeObject(IOstreamOption streamOpt) const;
 };
 
 

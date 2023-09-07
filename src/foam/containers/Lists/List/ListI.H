@@ -126,7 +126,7 @@ inline void Foam::List<T>::clear()
     if (this->v_)
     {
         delete[] this->v_;
-        this->v_ = 0;
+        this->v_ = nullptr;
     }
 
     this->size_ = 0;

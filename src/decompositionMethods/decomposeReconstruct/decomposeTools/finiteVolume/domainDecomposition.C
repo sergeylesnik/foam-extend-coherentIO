@@ -37,8 +37,7 @@ License
 #include "globalMeshData.H"
 
 #include "sliceMeshHelper.H"
-#include "slicePermutation.H"
-#include "adiosWritePrimitives.H"
+#include "sliceWritePrimitives.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
@@ -91,7 +90,6 @@ Foam::domainDecomposition::~domainDecomposition()
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-
 Foam::autoPtr<Foam::fvMesh> Foam::domainDecomposition::parallelMesh
 (
     const Time& processorDb,
@@ -99,7 +97,7 @@ Foam::autoPtr<Foam::fvMesh> Foam::domainDecomposition::parallelMesh
 )
 {
     // Create cell lookup
-    labelList coherentCellAddressing(mesh_.nCells(), -1);
+    coherentCellAddressing_.resize(mesh_.nCells(), -1);
 
     label start = 0;
     label gCellI = 0;
@@ -112,12 +110,12 @@ Foam::autoPtr<Foam::fvMesh> Foam::domainDecomposition::parallelMesh
         partitionStarts[ procI+1 ] = start;
         // Fill the permutation from new to old cell numbering
         forAll (curCellLabels, cellI) {
-            coherentCellAddressing[curCellLabels[cellI]] = gCellI;
+            coherentCellAddressing_[curCellLabels[cellI]] = gCellI;
             ++gCellI;
         }
     }
     auto path = mesh_.pointsInstance()/mesh_.meshDir();
-    adiosWritePrimitives
+    sliceWritePrimitives
     (
         "mesh",
         path,
@@ -130,47 +128,84 @@ Foam::autoPtr<Foam::fvMesh> Foam::domainDecomposition::parallelMesh
     const labelList& own = mesh_.faceOwner();
     const labelList& nei = mesh_.faceNeighbour();
 
-    labelList procOwner( own.size(), -1 );
-    forAll ( own, faceI ) {
-        auto cellId = own[faceI];
-        procOwner[faceI] = coherentCellAddressing[cellId];
-    }
-
-    labelList procNeighbour( nei.size(), -1 );
-    forAll ( nei, faceI ) {
-        auto cellId = nei[faceI];
-        procNeighbour[faceI] = coherentCellAddressing[cellId];
-    }
-
+    labelList procOwner(own.size(), -1);
+    labelList procNeighbour(nei.size(), -1);
+    coherentFaceAddressing_.resize(own.size(), 0);
     faceList procFaces = mesh_.allFaces();
-    pointField procPoints = mesh_.allPoints();
 
-    // Transfer ownership if cell id in neighbour list is smaller than in owner list
-    label counter;
-    counter = 0;
-    while ( counter < procNeighbour.size() ) {
-        if ( procOwner[ counter ] > procNeighbour[ counter ] ) {
-            std::swap( procOwner[ counter ], procNeighbour[ counter ] );
-            procFaces[ counter ] = procFaces[ counter ].reverseFace();
+    // Packaging mesh data to apply permutations
+    std::vector
+    <
+        std::tuple<label, label, label, face>
+    >
+    owner_neighbour_face(nei.size());
+    #pragma omp parallel for
+    for (Foam::label faceI = 0; faceI < nei.size(); ++faceI)
+    {
+        auto ownCellId = own[faceI];
+        auto neiCellId = nei[faceI];
+        auto owner = coherentCellAddressing_[ownCellId];
+        auto neighbour = coherentCellAddressing_[neiCellId];
+        auto face = procFaces[faceI];
+        if ( owner > neighbour )
+        {
+            std::swap(owner, neighbour);
+            face = face.reverseFace();
         }
-        ++counter;
+        owner_neighbour_face[faceI] =
+            std::make_tuple
+            (
+                owner,
+                neighbour,
+                faceI,
+                face
+            );
+         procNeighbour[faceI] = neighbour;
     }
 
+    labelList indices(procNeighbour.size());
+    permutationOfSorted(indices.begin(), indices.end(), procNeighbour);
+    applyPermutation(owner_neighbour_face, indices);
 
-    Foam::labelList coherentFaceAddressing{};
-    Foam::labelList indices{};
-    indexIota( coherentFaceAddressing, procFaces.size(), 0 );
-    indexIota( indices, procNeighbour.size(), 0 );
-    indexSort( indices, procNeighbour );
-    applyPermutation( procNeighbour, indices );
-    applyPermutation( procOwner, indices );
-    applyPermutation( procFaces, indices );
-    applyPermutation( coherentFaceAddressing, indices );
+    #pragma omp parallel for
+    for (Foam::label faceI = 0; faceI < owner_neighbour_face.size(); ++faceI)
+    {
+        procOwner[faceI] = std::get<0>
+        (
+            std::move(owner_neighbour_face[faceI])
+        );
+        procNeighbour[faceI] = std::get<1>
+        (
+            std::move(owner_neighbour_face[faceI])
+        );
+        coherentFaceAddressing_[faceI] = std::get<2>
+        (
+            std::move(owner_neighbour_face[faceI])
+        );
+        procFaces[faceI] = std::get<3>
+        (
+            std::move(owner_neighbour_face[faceI])
+        );
+    }
 
-    coherentCellAddressing_ = coherentCellAddressing;
-    coherentFaceAddressing_ = coherentFaceAddressing;
+    // Filling owners for patch faces
+    #pragma omp parallel for
+    for (Foam::label faceI = nei.size(); faceI < own.size(); ++faceI)
+    {
+        auto cellId = own[faceI];
+        procOwner[faceI] = coherentCellAddressing_[cellId];
+    }
+
+    // Filling face IDs for patch faces
+    std::iota
+    (
+        coherentFaceAddressing_.begin() + procNeighbour.size(),
+        coherentFaceAddressing_.end(),
+        procNeighbour.size()
+    );
 
     // Create processor mesh without a boundary
+    pointField procPoints = mesh_.allPoints();
     autoPtr<fvMesh> procMeshPtr
     (
         new fvMesh
@@ -192,13 +227,19 @@ Foam::autoPtr<Foam::fvMesh> Foam::domainDecomposition::parallelMesh
 
     const polyPatchList& meshPatches = mesh_.boundaryMesh();
     List<polyPatch*> procPatches( meshPatches.size(), nullptr );
-    forAll ( meshPatches, patchi ) {
-        procPatches[patchi] = meshPatches[patchi].clone( procMesh.boundaryMesh() ).ptr();
+    forAll ( meshPatches, patchi )
+    {
+        procPatches[patchi] =
+            meshPatches[patchi].clone
+            (
+                procMesh.boundaryMesh()
+            ).ptr();
     }
     procMesh.addFvPatches( procPatches, false );
     procMesh.write();
 
-    procMesh.checkMesh( true );
+    // TODO: Remove or insert as desired
+    //procMesh.checkMesh( true );
     // REMOVED: "Create processor boundary patches"
     // Because will be identified through extended neighbour list while reading.
 
@@ -648,6 +689,21 @@ bool Foam::domainDecomposition::writeDecomposition()
 {
     Info<< "\nConstructing processor meshes" << endl;
 
+    if ( mesh_.time().writeFormat() == IOstream::COHERENT ) {
+        Time myDb
+        (
+            Time::controlDictName,
+            mesh_.time().rootPath(),
+            mesh_.time().caseName(),
+            "system",
+            "constant",
+            true
+        );
+
+        parallelMesh( myDb, mesh_.polyMesh::name() );
+
+    } else {
+
     // Make a lookup map for globally shared points
     Map<label> sharedPointLookup(2*globallySharedPoints_.size());
 
@@ -695,34 +751,6 @@ bool Foam::domainDecomposition::writeDecomposition()
         labelField(mesh_.nPoints(), 0)
     );
 
-    Foam::Time runTime(
-        Foam::Time::controlDictName,
-        mesh_.time().rootPath(),
-        mesh_.time().caseName()
-        );
-    const dictionary& controlDict(runTime.controlDict());
-    bool ramDiskUsage_ = false;
-    if (controlDict.isDict("functions"))
-    {
-        const dictionary& functionSubDict(controlDict.subDict("functions"));
-        if (functionSubDict.isDict("tarSystemCall"))
-        {
-            const dictionary& tarSystemCallDict(functionSubDict.subDict("tarSystemCall"));
-            ramDiskUsage_ = tarSystemCallDict.lookupOrDefault("ramDiskUsage", false);
-        }
-    }
-
-    if ( mesh_.time().writeFormat() == IOstream::COHERENT ) {
-        Time myDb( Time::controlDictName,
-                   mesh_.time().rootPath(),
-                   mesh_.time().caseName(),
-                   "system",
-                   "constant",
-                   true );
-
-        parallelMesh( myDb, mesh_.polyMesh::name() );
-
-    } else {
         // Write out the meshes
         for (label procI = 0; procI < nProcs_; procI++)
         {
@@ -894,24 +922,15 @@ bool Foam::domainDecomposition::writeDecomposition()
                 labelField(globalPointLevel, pointMap)
             );
             procPointLevel.write();
-
-            if (ramDiskUsage_)
-            {
-                std::ostringstream exeStream;
-                exeStream << "tar -uf processor" << procI << ".tar "
-                          << "processor" << procI << " && rm -r processor" << procI;
-                std::string executeString = exeStream.str();
-                Info<< executeString << endl;
-                Foam::system(executeString);
-            }
         }
-    }
 
     Info<< nl
         << "Number of processor faces = " << totProcFaces/2 << nl
         << "Max number of processor patches = " << maxProcPatches << nl
         << "Max number of faces between processors = " << maxProcFaces
         << endl;
+
+    }
 
     return true;
 }

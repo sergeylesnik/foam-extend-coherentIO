@@ -27,7 +27,7 @@ License
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::globalIndex::globalIndex(const label localSize)
+Foam::globalIndex::globalIndex(const label localSize, const bool reduce)
 :
     offsets_(Pstream::nProcs())
 {
@@ -36,21 +36,28 @@ Foam::globalIndex::globalIndex(const label localSize)
     Pstream::gatherList(localSizes);
     Pstream::scatterList(localSizes);   // just to balance out comms
 
-    label offset = 0;
-    forAll(offsets_, procI)
+    if (reduce)
     {
-        label oldOffset = offset;
-        offset += localSizes[procI];
-
-        if (offset < oldOffset)
+        label offset = 0;
+        forAll(offsets_, procI)
         {
-            FatalErrorIn("globalIndex::globalIndex(const label)")
-                << "Overflow : sum of sizes " << localSizes
-                << " exceeds capability of label (" << labelMax
-                << "). Please recompile with larger datatype for label."
-                << exit(FatalError);
+            label oldOffset = offset;
+            offset += localSizes[procI];
+
+            if (offset < oldOffset)
+            {
+                FatalErrorIn("globalIndex::globalIndex(const label)")
+                    << "Overflow : sum of sizes " << localSizes
+                    << " exceeds capability of label (" << labelMax
+                    << "). Please recompile with larger datatype for label."
+                    << exit(FatalError);
+            }
+            offsets_[procI] = offset;
         }
-        offsets_[procI] = offset;
+    }
+    else
+    {
+        std::copy(localSizes.begin(), localSizes.end(), offsets_.begin());
     }
 }
 

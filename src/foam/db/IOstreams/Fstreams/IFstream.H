@@ -49,8 +49,7 @@ namespace Foam
 {
 
 class IFstream;
-//class adiosRead;
-class adiosStream;
+class SliceStream;
 
 /*---------------------------------------------------------------------------*\
                       Class IFstreamAllocator Declaration
@@ -69,8 +68,7 @@ class IFstreamAllocator
         //  COHERENT. It is then assigned to isrteam buffer.
         std::string bufStr_;
 
-        //std::unique_ptr<adiosRead> adiosPtr_;
-        std::unique_ptr<adiosStream> adiosStreamPtr_;
+        std::unique_ptr<SliceStream> sliceStreamPtr_;
         IOstream::compressionType compression_;
 
 

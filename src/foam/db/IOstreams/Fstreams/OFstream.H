@@ -52,8 +52,6 @@ namespace Foam
 {
 
 class OFstream;
-class adiosWrite;
-class adiosStream;
 
 /*---------------------------------------------------------------------------*\
                       Class OFstreamAllocator Declaration
@@ -65,8 +63,6 @@ class OFstreamAllocator
     friend class OFstream;
 
     ostream* ofPtr_;
-    //std::shared_ptr<adiosWrite> adiosPtr_;
-    std::unique_ptr<adiosStream> adiosStreamPtr_;
 
     // Constructors
 
@@ -77,7 +73,6 @@ class OFstreamAllocator
             ios_base::openmode mode,
             IOstream::streamFormat format = IOstream::ASCII,
             IOstream::compressionType compression = IOstream::UNCOMPRESSED
-
         );
 
     //- Destructor
@@ -113,15 +108,31 @@ public:
 
     // Constructors
 
-        //- Construct from pathname
+        //- Default construct
         OFstream
         (
             const fileName& pathname,
             ios_base::openmode mode = ios_base::out|ios_base::trunc,
+            IOstreamOption streamOpt = IOstreamOption()
+        );
+
+        //- Construct from pathname
+        OFstream
+        (
+            const fileName& pathname,
+            ios_base::openmode mode,
             streamFormat format = ASCII,
             versionNumber version = currentVersion,
             compressionType compression = UNCOMPRESSED
-        );
+        )
+        :
+            OFstream
+            (
+                pathname,
+                mode,
+                IOstreamOption(format, version, compression)
+            )
+        {}
 
 
     // Destructor
@@ -189,7 +200,7 @@ public:
             //- Write field with the scalar primitive type
             virtual Ostream& write(const char*, std::streamsize);
 
-            virtual Ostream& parwrite(uListProxyBase*);
+            virtual Ostream& parwrite(std::unique_ptr<uListProxyBase>);
 
             virtual Ostream& stringStream();
 

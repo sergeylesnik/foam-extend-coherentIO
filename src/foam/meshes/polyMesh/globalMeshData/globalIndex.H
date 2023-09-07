@@ -71,7 +71,11 @@ public:
     // Constructors
 
         //- Construct from local max size
-        globalIndex(const label localSize);
+        globalIndex
+        (
+            const label localSize,
+            const bool reduce = true
+        );
 
         //- Construct from Istream
         globalIndex(Istream& is);
@@ -120,7 +124,6 @@ public:
 
             //- Start of procI data
             inline label offset(const label procI) const;
-
 
 
     // IOstream Operators

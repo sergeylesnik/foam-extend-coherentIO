@@ -30,7 +30,8 @@ Description
 #include "objectRegistry.H"
 #include "OSspecific.H"
 #include "OFstream.H"
-#include "adiosStream.H"
+#include "SliceStream.H"
+#include "Pstream.H"
 
 #include "profiling.H"
 
@@ -42,6 +43,12 @@ bool Foam::regIOobject::writeObject
     IOstream::versionNumber ver,
     IOstream::compressionType cmp
 ) const
+{
+    return writeObject(IOstreamOption(fmt, ver, cmp));
+}
+
+
+bool Foam::regIOobject::writeObject(IOstreamOption streamOpt) const
 {
     if (!good())
     {
@@ -73,7 +80,17 @@ bool Foam::regIOobject::writeObject
         const_cast<regIOobject&>(*this).instance() = time().timeName();
     }
 
-    mkDir(path());
+    if (time().writeFormat() == IOstream::COHERENT)
+    {
+        if (Pstream::master())
+        {
+            mkDir(path());
+        }
+    }
+    else
+    {
+        mkDir(path());
+    }
 
     if (OFstream::debug)
     {
@@ -87,9 +104,7 @@ bool Foam::regIOobject::writeObject
     (
         objectPath(),
         ios_base::out|ios_base::trunc,
-        fmt,
-        ver,
-        cmp
+        streamOpt
     );
 
 
@@ -113,23 +128,35 @@ bool Foam::regIOobject::write() const
 {
     addProfile2(io, "Foam::regIOobject::write()");
 
-    if (time().writeFormat() == IOstream::COHERENT)
+    bool writeBulkData = false;
+    auto destination = IOstreamOption::TIME;
+    if (time().controlDict().lookupOrDefault("writeBulkData", false))
     {
-        //auto type = Foam::adiosStreamType( objectPath() );
-        //Foam::adiosBeginStep< Foam::adiosWriting >( std::move( type ) );
+        writeBulkData = true;
+        destination = IOstreamOption::CASE;
     }
 
-    bool ok = writeObject
+    IOstreamOption streamOpt
     (
         time().writeFormat(),
         IOstream::currentVersion,
-        time().writeCompression()
+        time().writeCompression(),
+        IOstreamOption::SYNC,  // ToDoIO Store this default in foamTime?
+        destination
     );
 
     if (time().writeFormat() == IOstream::COHERENT)
     {
-        //auto type = Foam::adiosStreamType( objectPath() );
-        //Foam::adiosEndStep< Foam::adiosWriting >( std::move( type ) );
+        auto repo = SliceStreamRepo::instance();
+        repo->open(writeBulkData);
+    }
+
+    bool ok = writeObject(streamOpt);
+
+    if (time().writeFormat() == IOstream::COHERENT)
+    {
+        auto repo = SliceStreamRepo::instance();
+        repo->close(writeBulkData);
     }
 
     return ok;
@@ -145,15 +172,24 @@ bool Foam::regIOobject::writeToStream
     IOstream::compressionType cmp
 ) const
 {
+    return writeToStream(pathname, mode, IOstreamOption(fmt, ver, cmp));
+}
+
+
+bool Foam::regIOobject::writeToStream
+(
+    const fileName& pathname,
+    ios_base::openmode mode,
+    IOstreamOption streamOpt
+) const
+{
     // Try opening an OFstream for object
     // Stream open for over-write.  HJ, 17/Aug/2010
     OFstream os
     (
         objectPath(),
         ios_base::out|ios_base::trunc,
-        fmt,
-        ver,
-        cmp
+        streamOpt
     );
 
     // If any of these fail, return (leave error handling to Ostream class)

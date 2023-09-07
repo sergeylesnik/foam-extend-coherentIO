@@ -25,7 +25,6 @@ License
 
 #include "IOstream.H"
 #include "error.H"
-#include "Switch.H"
 #include <sstream>
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
@@ -34,61 +33,6 @@ Foam::fileName Foam::IOstream::name_("IOstream");
 
 
 // * * * * * * * * * * * * Static Member Functions * * * * * * * * * * * * * //
-
-Foam::IOstream::streamFormat
-Foam::IOstream::formatEnum(const word& format)
-{
-    if (format == "ascii")
-    {
-        return IOstream::ASCII;
-    }
-    else if (format == "binary")
-    {
-        return IOstream::BINARY;
-    }
-    else if (format == "coherent")
-    {
-        return IOstream::COHERENT;
-    }
-    else
-    {
-        WarningIn("IOstream::formatEnum(const word&)")
-            << "bad format specifier '" << format << "', using 'ascii'"
-            << endl;
-
-        return IOstream::ASCII;
-    }
-}
-
-
-Foam::IOstream::compressionType
-Foam::IOstream::compressionEnum(const word& compression)
-{
-    // get Switch (bool) value, but allow it to fail
-    Switch sw(compression, true);
-
-    if (sw.valid())
-    {
-        return sw ? IOstream::COMPRESSED : IOstream::UNCOMPRESSED;
-    }
-    else if (compression == "uncompressed")
-    {
-        return IOstream::UNCOMPRESSED;
-    }
-    else if (compression == "compressed")
-    {
-        return IOstream::COMPRESSED;
-    }
-    else
-    {
-        WarningIn("IOstream::compressionEnum(const word&)")
-            << "bad compression specifier '" << compression
-            << "', using 'uncompressed'"
-            << endl;
-
-        return IOstream::UNCOMPRESSED;
-    }
-}
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
@@ -133,24 +77,8 @@ Foam::string Foam::IOstream::versionNumber::str() const
 
 void Foam::IOstream::print(Ostream& os) const
 {
-    os  << "IOstream: " << "Version "  << version_ << ", format ";
-
-    switch (format_)
-    {
-        case ASCII:
-            os  << "ASCII";
-        break;
-
-        case BINARY:
-            os  << "BINARY";
-        break;
-
-        case COHERENT:
-            os  << "COHERENT";
-        break;
-    }
-
-    os  << ", line "       << lineNumber();
+    os  << "IOstream: " << "Version "  << version() << ", format "
+        << format() << ", line " << lineNumber();
 
     if (opened())
     {
@@ -212,33 +140,6 @@ void Foam::IOstream::print(Ostream& os, const int streamState) const
 
 
 // * * * * * * * * * * * * * * * Friend Operators  * * * * * * * * * * * * * //
-
-Foam::Ostream& Foam::operator<<(Ostream& os, const IOstream::streamFormat& sf)
-{
-    if (sf == IOstream::ASCII)
-    {
-        os << "ascii";
-    }
-    else if (sf == IOstream::BINARY)
-    {
-        os << "binary";
-    }
-    else if (sf == IOstream::COHERENT)
-    {
-        os << "coherent";
-    }
-
-    return os;
-}
-
-
-Foam::Ostream& Foam::operator<<(Ostream& os, const IOstream::versionNumber& vn)
-{
-    os << vn.str().c_str();
-    return os;
-}
-
-
 
 namespace Foam
 {

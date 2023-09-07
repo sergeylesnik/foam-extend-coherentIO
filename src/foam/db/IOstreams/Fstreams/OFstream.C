@@ -33,10 +33,8 @@ License
 #include <iostream>
 #include <memory>
 
-//#include "adiosWriting.H"
-//#include "adiosFileStream.H"
-#include "adiosStream.H"
-#include "adiosWritePrimitives.H"
+#include "SliceStreamRepo.H"
+#include "sliceWritePrimitives.H"
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
@@ -53,8 +51,7 @@ Foam::OFstreamAllocator::OFstreamAllocator
     IOstream::compressionType compression
 )
 :
-    ofPtr_(nullptr),
-    adiosStreamPtr_(nullptr)
+    ofPtr_(nullptr)
 {
     if (pathname.empty())
     {
@@ -65,40 +62,32 @@ Foam::OFstreamAllocator::OFstreamAllocator
         }
     }
 
-    if (compression == IOstream::COMPRESSED)
+    if (format == IOstream::COHERENT)
     {
-        // get identically named uncompressed version out of the way
-        if (isFile(pathname, false))
-        {
-            rm(pathname);
-        }
-
-        ofPtr_ = new ogzstream((pathname + ".gz").c_str(), mode);
+        // The file pointer is a buffer pointer in this case.
+        // The buffer is written to ADIOS in the destructor.
+        ofPtr_ = new std::ostringstream();
     }
     else
     {
-        // get identically named compressed version out of the way
-        if (isFile(pathname + ".gz", false))
+        if (compression == IOstream::COMPRESSED)
         {
-            rm(pathname + ".gz");
-        }
-
-        if (format == IOstream::COHERENT)
-        {
-            // The file pointer is a buffer pointer in this case.
-            // The buffer is written to ADIOS in the destructor.
-            ofPtr_ = new std::ostringstream();
-
-            adiosWriting adiosCreator{};
-            adiosStreamPtr_ = adiosCreator.createStream();
-            Foam::string type = "fields";
-            if ( pathname.find("polyMesh") != std::string::npos ) {
-                type = "mesh";
+            // get identically named uncompressed version out of the way
+            if (isFile(pathname, false))
+            {
+                rm(pathname);
             }
-            //adiosStreamPtr_->open( std::move( type ), pathname );
+
+            ofPtr_ = new ogzstream((pathname + ".gz").c_str(), mode);
         }
         else
         {
+            // get identically named compressed version out of the way
+            if (isFile(pathname + ".gz", false))
+            {
+                rm(pathname + ".gz");
+            }
+
             ofPtr_ = new ofstream(pathname.c_str(), mode);
         }
     }
@@ -117,13 +106,17 @@ Foam::OFstream::OFstream
 (
     const fileName& pathname,
     ios_base::openmode mode,
-    streamFormat format,
-    versionNumber version,
-    compressionType compression
+    IOstreamOption streamOpt
 )
 :
-    OFstreamAllocator(pathname, mode, format, compression),
-    OSstream(*ofPtr_, "OFstream.sinkFile_", format, version, compression),
+    OFstreamAllocator
+    (
+        pathname,
+        mode,
+        streamOpt.format(),
+        streamOpt.compression()
+    ),
+    OSstream(*ofPtr_, "OFstream.sinkFile_", streamOpt),
     pathname_(pathname),
     blockNamesStack_(),
     tmpOssPtr_(nullptr)
@@ -131,7 +124,8 @@ Foam::OFstream::OFstream
     if (debug)
     {
         InfoInFunction
-            << "Constructing a stream with format " << format << Foam::endl;
+            << "Constructing a stream with format " << streamOpt.format()
+            << Foam::endl;
     }
     setClosed();
     setState(ofPtr_->rdstate());
@@ -291,10 +285,10 @@ Foam::Ostream& Foam::OFstream::writeKeyword(const keyType& kw)
     }
 
     blockNamesStack_.push(kw);
-    // Inform adiosRepo that n'th boundary is being written.
+    // Inform SliceStreamRepo that n'th boundary is being written.
     if( kw == "type" ) {
        ++boundaryCounter_;
-       Foam::adiosRepo* repo = Foam::adiosRepo::instance();
+       Foam::SliceStreamRepo* repo = Foam::SliceStreamRepo::instance();
        repo->push( boundaryCounter_ );
     }
 
@@ -331,7 +325,7 @@ Foam::Ostream& Foam::OFstream::write
 {
     if (format() == COHERENT)
     {
-        adiosWritePrimitives
+        sliceWritePrimitives
         (
             "fields",
             "",
@@ -349,7 +343,7 @@ Foam::Ostream& Foam::OFstream::write
 }
 
 
-Foam::Ostream& Foam::OFstream::parwrite(uListProxyBase* uListProxyPtr)
+Foam::Ostream& Foam::OFstream::parwrite(std::unique_ptr<uListProxyBase> uListProxyPtr)
 {
     if (format() != COHERENT)
     {

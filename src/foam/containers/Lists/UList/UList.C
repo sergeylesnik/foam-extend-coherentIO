@@ -117,42 +117,6 @@ Foam::label Foam::UList<T>::byteSize() const
 }
 
 
-template<typename ElementType>
-Foam::label Foam::calculateLinearSize( const Foam::UList<ElementType>* someList, Foam::label& linearSize )
-{
-    if constexpr( has_linearSize_method<ElementType>::value )
-    {
-        for ( auto elementIter = someList->begin();
-              elementIter != someList->end();
-              ++elementIter )
-            {
-                linearSize += Foam::calculateLinearSize( elementIter, linearSize );
-            }
-    } else if constexpr( !has_size_method<ElementType>::value ) {
-        linearSize += someList->size();
-    }
-
-    return 0;
-}
-
-
-template<class T>
-Foam::label Foam::UList<T>::addToLinearSize( Foam::label size ) const
-{
-    linearSize_ += size;
-    return linearSize_;
-}
-
-
-template<class T>
-Foam::label Foam::UList<T>::linearSize() const
-{
-    linearSize_ = 0;
-    calculateLinearSize( this, linearSize_ );
-    return linearSize_;
-}
-
-
 template<class T>
 void Foam::sort(UList<T>& a)
 {

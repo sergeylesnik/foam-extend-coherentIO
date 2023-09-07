@@ -1,4 +1,0 @@
-startTarCase.C
-findTarTimes.C 
-
-LIB = $(FOAM_USER_LIBBIN)/libstartTarCase
